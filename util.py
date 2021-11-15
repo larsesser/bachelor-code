@@ -92,6 +92,12 @@ def random_angles(n_qubits: int, n_samples: int) -> List[List[Tuple[float, float
 
 
 def init_random_state(qubits: int, angles: List[Tuple[float, float]]) -> QuantumCircuit:
+    """Returns a QuantumCircuit where each qubit is initialized in a random state.
+
+    The random state is realised through an RX and RZ gate acting on each qubit and
+    using the angles provided in angles[qubit]. To realise entangled states, a CX gate
+    is applied to each forwarding combination of qubits.
+    """
     if qubits != len(angles):
         raise ValueError(f"Must provide equal number of qubits ({qubits}) and pairs of"
                          f"angles ({len(angles)}).")
@@ -111,6 +117,10 @@ def init_random_state(qubits: int, angles: List[Tuple[float, float]]) -> Quantum
 
 
 def init_cb_state(qubits: int, start_qubit: int) -> QuantumCircuit:
+    """Returns a QuantumCircuit initialized in a Computational Basis state.
+
+    This is, flipping the start_qubit to |1> and leave all others in |0>.
+    """
     circ = QuantumCircuit(qubits)
     circ.x(start_qubit)
     return circ
