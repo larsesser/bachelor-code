@@ -79,6 +79,18 @@ class LIModel:
         return self.circuit(initial_state, delta_t=stop_time)
 
 
+def random_angles(n_qubits: int, n_samples: int) -> List[List[Tuple[float, float]]]:
+    """Draws a pair of angles from [0, 2*pi) for each Qubit in each sample."""
+    return [
+        [
+            (np.random.uniform(low=0, high=2 * np.pi),
+             np.random.uniform(low=0, high=2 * np.pi))
+            for _ in range(n_qubits)
+        ]
+        for _ in range(n_samples)
+    ]
+
+
 def init_random_state(qubits: int, angles: List[Tuple[float, float]]) -> QuantumCircuit:
     if qubits != len(angles):
         raise ValueError(f"Must provide equal number of qubits ({qubits}) and pairs of"
@@ -140,14 +152,7 @@ pprint(phases)
 
 exit()
 
-samples_angles = [
-    [
-        # draw the angles (sigma, theta) for the (Rx, Rz) gate uniformly from [0, 2*pi)
-        (np.random.uniform(low=0, high=2*np.pi), np.random.uniform(low=0, high=2*np.pi))
-        for _ in range(model.N)
-    ]
-    for _ in range(samples)
-]
+samples_angles = random_angles(model.N, samples)
 
 for loop, angles in enumerate(samples_angles, start=1):
     circ = init_random_state(model.N, angles)
