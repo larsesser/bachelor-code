@@ -4,8 +4,12 @@ from itertools import product
 
 from qiskit.circuit.library.standard_gates import IGate, ZGate
 
+# each gate which can be sorted in lexicographic order
 OrderedGate = Union[IGate, ZGate]
-OrderedGates = Sequence[OrderedGate]
+# a operator acting on one or more qubits, containing an OrderedGate for each qubit
+OrderedOperator = Sequence[OrderedGate]
+# a bunch of operators acting on one or more qubits
+OrderedOperators = Sequence[OrderedOperator]
 
 
 @overload
@@ -14,7 +18,7 @@ def lexicographic_less(left: OrderedGate, right: OrderedGate, equal: bool = Fals
 
 
 @overload
-def lexicographic_less(left: OrderedGates, right: OrderedGates, equal: bool = False) -> bool:
+def lexicographic_less(left: OrderedOperator, right: OrderedOperator, equal: bool = False) -> bool:
     ...
 
 
@@ -27,10 +31,10 @@ def lexicographic_less(left, right, equal: bool = False) -> bool:
     if not all(isinstance(gate, IGate) or isinstance(gate, ZGate) for gate in left):
         raise NotImplementedError("Comparison is not implemented for this gates.")
     if not all(isinstance(gate, IGate) or isinstance(gate, ZGate) for gate in right):
-        raise NotImplementedError("Comparison is not implemented for this gates.")
+        raise NotImplementedError("Comparison is not implemented for this operator.")
 
     if len(left) != len(right):
-        raise ValueError("Both arguments must have the same length!")
+        raise ValueError("Both operator must contain the same number of gates!")
 
     # we start comparing the "left" and "right" operator from the left pairwise
     for l, r in zip(left, right):
@@ -50,7 +54,7 @@ def lexicographic_less(left, right, equal: bool = False) -> bool:
     return equal
 
 
-def lexicographic_ordered_operators(Q: int) -> List[OrderedGates]:
+def lexicographic_ordered_operators(Q: int) -> OrderedOperators:
     """Returns all combinations of Q operators, in lexicographic order."""
     # TODO: check if this works as expected
     return list(product([IGate(), ZGate()], repeat=Q))
@@ -92,7 +96,7 @@ def w_matrix(Q: int) -> ImmutableMatrix:
     return ImmutableMatrix(matrix)
 
 
-def w_element(noiseless_operators: OrderedGates, noisy_operators: OrderedGates):
+def w_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperator):
     """Calculate one entry of the w_matrix.
 
     The entry depends on the noise free operators (column) and noisy operators (row).
@@ -104,11 +108,11 @@ def w_element(noiseless_operators: OrderedGates, noisy_operators: OrderedGates):
         ––                                                 ––
     """
     # w is a lower triangular matrix, so the upper right part of the matrix is 0
-    if lexicographic_less(noisy_operators, noiseless_operators):
+    if lexicographic_less(noisy_operator, noiseless_operator):
         return 0
 
     ret = 1
-    for qubit, (noiseless_operator, noisy_operator) in enumerate(zip(noiseless_operators, noisy_operators)):
+    for qubit, (noiseless_operator, noisy_operator) in enumerate(zip(noiseless_operator, noisy_operator)):
         if isinstance(noiseless_operator, IGate) and isinstance(noisy_operator, IGate):
             ret *= 1
         elif isinstance(noiseless_operator, IGate) and isinstance(noisy_operator, ZGate):
