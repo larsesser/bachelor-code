@@ -1,7 +1,8 @@
-from typing import List, Union, overload, Sequence
+from typing import Dict, Union, overload, Sequence
 from sympy import Symbol, zeros, Matrix, ImmutableMatrix
 from itertools import product
 
+from qiskit import QuantumCircuit
 from qiskit.circuit.library.standard_gates import IGate, ZGate
 
 # each gate which can be sorted in lexicographic order
@@ -10,6 +11,10 @@ OrderedGate = Union[IGate, ZGate]
 OrderedOperator = Sequence[OrderedGate]
 # a bunch of operators acting on one or more qubits
 OrderedOperators = Sequence[OrderedOperator]
+
+# use global variables to cache calculated matrices
+_W_MATRIX_DIMENSION: Dict[int, ImmutableMatrix] = dict()
+_W_MATRIX_INVERSE_DIMENSION: Dict[int, ImmutableMatrix] = dict()
 
 
 @overload
@@ -60,6 +65,19 @@ def lexicographic_ordered_operators(Q: int) -> OrderedOperators:
     return list(product([IGate(), ZGate()], repeat=Q))
 
 
+def operator_position(operator: OrderedOperator) -> int:
+    """The zero-based position of the operator in the vector of all lexicographic ordered operators of dimension Q.
+
+    For example, the operator O=IZ has position 1, since the vector of all operators
+    with dimension 2 in lexicographic order is (II, IZ, ZI, ZZ).
+
+    Determine the order by casting the operator-tuple into a bitstring, replacing
+    I -> 0 and Z -> 1.
+    """
+    bitstring = "".join(["1" if isinstance(gate, ZGate) else "0" for gate in operator])
+    return int(bitstring, base=2)
+
+
 def w_matrix(Q: int) -> ImmutableMatrix:
     """Return the w-matrix for a given number Q of operators.
 
@@ -71,7 +89,7 @@ def w_matrix(Q: int) -> ImmutableMatrix:
     Then, w is the matrix relating the noise-free operators O to the statistical
     expectation value of the operators \tilde{O}.
 
-    For Q=2, this looks as follows (w is a 4x4 matrix):
+    For Q=2, this looks as follows (w is a 4x4 matrix, in general a 2^Qx2^Q matrix):
         ––                         ––            ––   ––
         | E ( \tilde{I} \tilde{I} ) |            | I I |
         | E ( \tilde{I} \tilde{Z} ) |            | I Z |
@@ -83,17 +101,41 @@ def w_matrix(Q: int) -> ImmutableMatrix:
     qubit, which should be inserted using sympy.substitute later one. In this way,
     the matrix for a number of Q qubits need to be computed only once.
     """
+    # use cached matrix if available
+    if Q in _W_MATRIX_DIMENSION:
+        return _W_MATRIX_DIMENSION[Q]
+
     noiseless_operators = lexicographic_ordered_operators(Q)
     noisy_operators = lexicographic_ordered_operators(Q)
 
-    matrix: Matrix = zeros(Q)
+    matrix: Matrix = zeros(2**Q)
 
     # fill the matrix with content
     for row, noisy_operator in enumerate(noisy_operators):
         for col, noiseless_operator in enumerate(noiseless_operators):
             matrix[row, col] = w_element(noiseless_operator, noisy_operator)
 
-    return ImmutableMatrix(matrix)
+    # cache matrix
+    _W_MATRIX_DIMENSION[Q] = ImmutableMatrix(matrix)
+
+    return _W_MATRIX_DIMENSION[Q]
+
+
+def w_matrix_inverse(Q: int) -> ImmutableMatrix:
+    """Calculate the inverse w matrix.
+
+    This is used to actually error correct an operator from several noisy operator
+    expectation values. Note that this still contains the placeholders for the
+    probabilities.
+    """
+    # use cached matrix if available
+    if Q in _W_MATRIX_INVERSE_DIMENSION:
+        return _W_MATRIX_INVERSE_DIMENSION[Q]
+
+    matrix = w_matrix(Q)
+    _W_MATRIX_INVERSE_DIMENSION[Q] = matrix.inverse()
+
+    return _W_MATRIX_INVERSE_DIMENSION[Q]
 
 
 def w_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperator):
@@ -112,24 +154,39 @@ def w_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperat
         return 0
 
     ret = 1
-    for qubit, (noiseless_operator, noisy_operator) in enumerate(zip(noiseless_operator, noisy_operator)):
-        if isinstance(noiseless_operator, IGate) and isinstance(noisy_operator, IGate):
+    for qubit, (noiseless_gate, noisy_gate) in enumerate(zip(noiseless_operator, noisy_operator)):
+        if isinstance(noiseless_gate, IGate) and isinstance(noisy_gate, IGate):
             ret *= 1
-        elif isinstance(noiseless_operator, IGate) and isinstance(noisy_operator, ZGate):
+        elif isinstance(noiseless_gate, IGate) and isinstance(noisy_gate, ZGate):
             p0_q = p0_symbol(qubit)
             p1_q = p1_symbol(qubit)
             ret *= p1_q - p0_q
-        # this can not happen, since this is only the case in the upper triangular
-        # part of the matrix, which is caught separately above.
-        # elif isinstance(noiseless_operator, ZGate) and isinstance(noisy_operator, IGate):
-        elif isinstance(noiseless_operator, ZGate) and isinstance(noisy_operator, ZGate):
+        elif isinstance(noiseless_gate, ZGate) and isinstance(noisy_gate, IGate):
+            ret *= 0
+            break
+        elif isinstance(noiseless_gate, ZGate) and isinstance(noisy_gate, ZGate):
             p0_q = p0_symbol(qubit)
             p1_q = p1_symbol(qubit)
             ret *= 1 - p0_q - p1_q
         else:
-            raise ValueError
+            print(noiseless_operator)
+            print(noisy_operator)
+            raise ValueError(qubit, noiseless_gate, noisy_gate)
 
     return ret
+
+
+def relevant_operators(noiseless_operator: OrderedOperator) -> OrderedOperators:
+    """Determine all noisy operators which need to be measured to reconstruct the given noiseless operator.
+
+    Go through all columns of w^-1 for the row given by the noiseless_operator and finde
+    those matrix elements which are not 0.
+    """
+    Q = len(noiseless_operator)
+    row = operator_position(noiseless_operator)
+    noisy_operators = lexicographic_ordered_operators(Q)
+    w_inverse = w_matrix_inverse(Q)
+    return [operator for operator, w_entry in zip(noisy_operators, w_inverse.row(row)) if w_entry != 0]
 
 
 def p0_symbol(q: int) -> Symbol:
@@ -154,3 +211,16 @@ def p1_symbol(q: int) -> Symbol:
     This functions is used to provide a consistent naming scheme.
     """
     return Symbol(f"p1_{q}")
+
+
+def operator_to_circ(operator: OrderedOperator) -> QuantumCircuit:
+    qubits = len(operator)
+    circ = QuantumCircuit(qubits)
+    for qubit, gate in enumerate(operator):
+        if isinstance(gate, IGate):
+            circ.i(qubit)
+        elif isinstance(gate, ZGate):
+            circ.z(qubit)
+        else:
+            raise RuntimeError
+    return circ
