@@ -81,15 +81,14 @@ class LIModel:
         return self.circuit(initial_state, delta_t=stop_time)
 
 
-def random_angles(n_qubits: int, n_samples: int) -> List[List[AnglePair]]:
-    """Draws a pair of angles from [0, 2*pi) for each Qubit in each sample."""
+def random_angles(n_qubits: int) -> List[AnglePair]:
+    """Draws a pair of angles from [0, 2*pi) for each Qubit."""
     return [
-        [
-            (np.random.uniform(low=0, high=2 * np.pi),
-             np.random.uniform(low=0, high=2 * np.pi))
-            for _ in range(n_qubits)
-        ]
-        for _ in range(n_samples)
+        (
+            np.random.uniform(low=0, high=2 * np.pi),
+            np.random.uniform(low=0, high=2 * np.pi)
+        )
+        for _ in range(n_qubits)
     ]
 
 
