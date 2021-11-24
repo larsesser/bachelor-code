@@ -21,6 +21,9 @@ from qiskit.algorithms.phase_estimators.phase_estimation_result import PhaseEsti
 from pprint import pprint
 
 
+AnglePair = Tuple[float, float]
+
+
 class LIModel:
     # factor for the Zq Zq+1 term
     J = 0   # J < 0
@@ -78,7 +81,7 @@ class LIModel:
         return self.circuit(initial_state, delta_t=stop_time)
 
 
-def random_angles(n_qubits: int, n_samples: int) -> List[List[Tuple[float, float]]]:
+def random_angles(n_qubits: int, n_samples: int) -> List[List[AnglePair]]:
     """Draws a pair of angles from [0, 2*pi) for each Qubit in each sample."""
     return [
         [
