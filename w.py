@@ -1,5 +1,5 @@
 from typing import Dict, Union, overload, Sequence
-from sympy import Symbol, zeros, Matrix, ImmutableMatrix
+from sympy import Symbol, zeros, Matrix, ImmutableMatrix, Expr
 from itertools import product
 
 from qiskit import QuantumCircuit
@@ -174,6 +174,20 @@ def w_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperat
             raise ValueError(qubit, noiseless_gate, noisy_gate)
 
     return ret
+
+
+def w_inverse_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperator) -> Expr:
+    """Get the entry in w^-1 for given noiseless and noisy operator.
+
+    This is needed to reconstruct the noiseless operator from multiple noisy one.
+    """
+    if len(noiseless_operator) != len(noisy_operator):
+        raise ValueError("Noisless and noisy operator must contain the same number of gates.")
+    Q = len(noiseless_operator)
+    row = operator_position(noiseless_operator)
+    col = operator_position(noisy_operator)
+    w_inverse = w_matrix_inverse(Q)
+    return w_inverse[row, col]
 
 
 def relevant_operators(noiseless_operator: OrderedOperator) -> OrderedOperators:
