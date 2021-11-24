@@ -7,7 +7,6 @@ from time import time
 from qiskit import QuantumCircuit
 from qiskit.providers.aer.backends.aerbackend import AerBackend
 from qiskit.providers.models.backendconfiguration import QasmBackendConfiguration
-from qiskit.providers.aer.jobs.aerjob import AerJob
 from qiskit.circuit.gate import Gate
 from qiskit.result.result import Result
 from qiskit.result.models import ExperimentResult
@@ -124,88 +123,3 @@ def init_cb_state(qubits: int, start_qubit: int) -> QuantumCircuit:
     circ = QuantumCircuit(qubits)
     circ.x(start_qubit)
     return circ
-
-
-model = LIModel(J=-1, h=2, N=4)
-samples = 10    # how many initial states do we create to simulate
-delta_t = 1     # time step for the ising model
-ising_routine = model.circuit(QuantumCircuit(model.N), delta_t=delta_t)
-
-backend: AerBackend = Aer.get_backend('aer_simulator')
-backend.set_option("max_parallel_threads", 3)
-phase_estimator = PhaseEstimation(num_evaluation_qubits=6, quantum_instance=backend)
-
-phases: List[Dict[str, float]] = []
-
-start = time()
-
-for loop in range(samples):
-    for bit in range(model.N):
-        # the phase estimation energy caluclation is only true if the initial state is a
-        # eigenstate of U. Since U is diagonal, the eigenstates are the computational
-        # basis states.
-        # TODO: this argument is given for the eigenstates of _H_, not for those of _U_!
-        circ = init_cb_state(model.N, start_qubit=bit)
-        circ.append(ising_routine.to_instruction(), [bit for bit in range(model.N)])
-
-        # Transpile for simulator
-        circ = transpile(circ, backend)
-        # circ.draw(filename=f"model-round-{loop}-bit-{bit}.png", output="mpl")
-
-        phase_circ = phase_estimator.construct_circuit(circ)
-        phase = phase_estimator.estimate(circ)
-        # the phase is computed in [0.0, 1.0)
-        phases.append(phase.filter_phases(cutoff=0.001))
-        print(f"Round {loop}, bit {bit}: {time() - start}")
-
-pprint(phases)
-
-exit()
-
-samples_angles = random_angles(model.N, samples)
-
-for loop, angles in enumerate(samples_angles, start=1):
-    circ = init_random_state(model.N, angles)
-    circ.append(ising_routine.to_instruction(), [bit for bit in range(model.N)])
-
-    # Transpile for simulator
-    circ = transpile(circ, backend)
-    circ.draw(filename=f"model-round-{loop}.png", output="mpl")
-
-    phase_circ = phase_estimator.construct_circuit(circ)
-    phase = phase_estimator.estimate(circ)
-    # the phase is computed in [0.0, 1.0)
-    phases.append(phase.filter_phases(cutoff=0.01, as_float=False))
-    print(f"Round {loop}: {time() - start}")
-
-pprint(phases)
-
-all_phasestrings = [phase for phase_dict in phases for phase in phase_dict]
-unique_phasestrings = set(all_phasestrings)
-phase_count = {bitstring: all_phasestrings.count(bitstring) for bitstring in unique_phasestrings}
-# sort dicts by value
-phase_count = sorted(phase_count.items(), key=lambda e: e[1])
-pprint(phase_count)
-
-phase_sum = {bitstring: sum(mea.get(bitstring, 0) for mea in phases) for bitstring in unique_phasestrings}
-# sort dicts by value
-phase_sum = sorted(phase_sum.items(), key=lambda e: e[1])
-pprint(phase_sum)
-
-exit()
-
-# Run and get counts
-#result: Result = backend.run(circ, seed_simulator=3710243989).result()
-job: AerJob = backend.run(circ)
-# print(job.qobj())
-result: Result = job.result()
-experiment_result: List[ExperimentResult] = result.results
-print(experiment_result[0].header)
-counts = result.get_counts()
-print(counts)
-circ.draw(filename=f"limodel.png", output="mpl")
-
-plt.show()  # to ensure a new figure is created
-plot_histogram(counts, title="Longitudinal Ising Model")
-
-plt.savefig("LI Model.png")
