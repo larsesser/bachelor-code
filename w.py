@@ -1,5 +1,8 @@
-from typing import Dict, Union, overload, Sequence
+import re
+
+from typing import Dict, Union, overload, Sequence, NamedTuple
 from sympy import Symbol, zeros, Matrix, ImmutableMatrix, Expr
+from sympy.printing import sstr
 from itertools import product
 
 from qiskit import QuantumCircuit
@@ -225,6 +228,25 @@ def p1_symbol(q: int) -> Symbol:
     This functions is used to provide a consistent naming scheme.
     """
     return Symbol(f"p1_{q}")
+
+
+class Bitflip(NamedTuple):
+    from_state: int
+    to_state: int
+    qubit: int
+
+
+def unravel_symbol(symbol: Symbol) -> Bitflip:
+    symbol_str = sstr(symbol)
+    if m := re.match("p(?P<from_state>\d)_(?P<qubit>\d)", symbol_str):
+        if m.group("from_state") not in {"0", "1"}:
+            raise ValueError("Not a from_state.")
+        from_state = int(m.group("from_state"))
+        to_state = 0 if from_state == 1 else 1
+        qubit = int(m.group("qubit"))
+        return Bitflip(from_state=from_state, to_state=to_state, qubit=qubit)
+    else:
+        raise ValueError("Not a matching symbol.")
 
 
 def operator_to_circ(operator: OrderedOperator) -> QuantumCircuit:
