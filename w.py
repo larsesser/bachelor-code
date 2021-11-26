@@ -237,6 +237,11 @@ class Bitflip(NamedTuple):
 
 
 def unravel_symbol(symbol: Symbol) -> Bitflip:
+    """Extract the information from a bitflip-probability symbol.
+
+    This takes one of the symbols created by p0_symbol or p1_symbol and extracts the
+    flipping (from_state flipping into to_state) and the affected qubit.
+    """
     symbol_str = sstr(symbol)
     if m := re.match("p(?P<from_state>\d)_(?P<qubit>\d)", symbol_str):
         if m.group("from_state") not in {"0", "1"}:
