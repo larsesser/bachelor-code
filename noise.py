@@ -6,8 +6,11 @@ from qiskit.providers.aer.noise import NoiseModel, ReadoutError
 
 from w import unravel_symbol
 
+# Mapping a symbol retrieved from w.py p0_symbol / p1_symbol to the flipping probability
+ErrorProbabilities = Dict[Symbol, float]
 
-def add_single_qubit_readout_errors(noise: NoiseModel, errors: Dict[Symbol, float]) -> NoiseModel:
+
+def add_single_qubit_readout_errors(noise: NoiseModel, errors: ErrorProbabilities) -> NoiseModel:
     """Add single qubit readout errors to each qubit as defined in errors.
 
     The correction procedure assumes that each qubit flips independently of the other
