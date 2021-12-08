@@ -100,6 +100,5 @@ class OrderedOperator:
 
 def lexicographic_ordered_operators(Q: int) -> OrderedOperators:
     """Returns all combinations of Q operators, in lexicographic order."""
-    # TODO: check if this works as expected
     operators: List[Tuple[OrderedGate, ...]] = list(product([IGate(), ZGate()], repeat=Q))
     return [OrderedOperator(*operator) for operator in operators]
