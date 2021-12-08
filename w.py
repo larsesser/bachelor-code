@@ -1,84 +1,22 @@
 import re
 
-from typing import Dict, Union, overload, Sequence, NamedTuple
+from typing import Dict, NamedTuple, List, Tuple
 from sympy import Symbol, zeros, Matrix, ImmutableMatrix, Expr, S
 from sympy.printing import sstr
 from itertools import product
 
-from qiskit import QuantumCircuit
-from qiskit.circuit.library.standard_gates import IGate, ZGate
-
-# each gate which can be sorted in lexicographic order
-OrderedGate = Union[IGate, ZGate]
-# a operator acting on one or more qubits, containing an OrderedGate for each qubit
-OrderedOperator = Sequence[OrderedGate]
-# a bunch of operators acting on one or more qubits
-OrderedOperators = Sequence[OrderedOperator]
+from ordered_operator import IGate, ZGate, OrderedGate, OrderedOperator, OrderedOperators
 
 # use global variables to cache calculated matrices
 _W_MATRIX_DIMENSION: Dict[int, ImmutableMatrix] = dict()
 _W_MATRIX_INVERSE_DIMENSION: Dict[int, ImmutableMatrix] = dict()
 
 
-@overload
-def lexicographic_less(left: OrderedGate, right: OrderedGate, equal: bool = False) -> bool:
-    ...
-
-
-@overload
-def lexicographic_less(left: OrderedOperator, right: OrderedOperator, equal: bool = False) -> bool:
-    ...
-
-
-def lexicographic_less(left, right, equal: bool = False) -> bool:
-    if not isinstance(left, Sequence):
-        left = [left]
-    if not isinstance(right, Sequence):
-        right = [right]
-
-    if not all(isinstance(gate, IGate) or isinstance(gate, ZGate) for gate in left):
-        raise NotImplementedError("Comparison is not implemented for this gates.")
-    if not all(isinstance(gate, IGate) or isinstance(gate, ZGate) for gate in right):
-        raise NotImplementedError("Comparison is not implemented for this operator.")
-
-    if len(left) != len(right):
-        raise ValueError("Both operator must contain the same number of gates!")
-
-    # we start comparing the "left" and "right" operator from the left pairwise
-    for l, r in zip(left, right):
-        # we can not say if on is larger than the other
-        if isinstance(l, IGate) and isinstance(r, IGate):
-            continue
-        # we can not say if on is larger than the other
-        elif isinstance(l, ZGate) and isinstance(r, ZGate):
-            continue
-        elif isinstance(l, IGate) and isinstance(r, ZGate):
-            return True
-        elif isinstance(l, ZGate) and isinstance(r, IGate):
-            return False
-        else:
-            raise RuntimeError
-    # the operators are equal
-    return equal
-
-
 def lexicographic_ordered_operators(Q: int) -> OrderedOperators:
     """Returns all combinations of Q operators, in lexicographic order."""
     # TODO: check if this works as expected
-    return list(product([IGate(), ZGate()], repeat=Q))
-
-
-def operator_position(operator: OrderedOperator) -> int:
-    """The zero-based position of the operator in the vector of all lexicographic ordered operators of dimension Q.
-
-    For example, the operator O=IZ has position 1, since the vector of all operators
-    with dimension 2 in lexicographic order is (II, IZ, ZI, ZZ).
-
-    Determine the order by casting the operator-tuple into a bitstring, replacing
-    I -> 0 and Z -> 1.
-    """
-    bitstring = "".join(["1" if isinstance(gate, ZGate) else "0" for gate in operator])
-    return int(bitstring, base=2)
+    operators: List[Tuple[OrderedGate, ...]] = list(product([IGate(), ZGate()], repeat=Q))
+    return [OrderedOperator(*operator) for operator in operators]
 
 
 def w_matrix(Q: int) -> ImmutableMatrix:
@@ -169,14 +107,14 @@ def w_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperat
         ––                                                 ––
     """
     # w is a lower triangular matrix, so the upper right part of the matrix is 0
-    if lexicographic_less(noisy_operator, noiseless_operator):
+    if noisy_operator < noiseless_operator:
         return S(0)
 
     # take care, since we enumerate our qubits conventionally from right to left!
-    qubits = range(len(noiseless_operator))[::-1]
+    qubits = range(noiseless_operator.Q)[::-1]
 
     ret = S(1)
-    for qubit, noiseless_gate, noisy_gate in zip(qubits, noiseless_operator, noisy_operator):
+    for qubit, noiseless_gate, noisy_gate in zip(qubits, noiseless_operator.gates, noisy_operator.gates):
         if isinstance(noiseless_gate, IGate) and isinstance(noisy_gate, IGate):
             ret *= S(1)
         elif isinstance(noiseless_gate, IGate) and isinstance(noisy_gate, ZGate):
@@ -203,12 +141,11 @@ def w_inverse_element(noiseless_operator: OrderedOperator, noisy_operator: Order
 
     This is needed to reconstruct the noiseless operator from multiple noisy one.
     """
-    if len(noiseless_operator) != len(noisy_operator):
+    if noiseless_operator.Q != noisy_operator.Q:
         raise ValueError("Noisless and noisy operator must contain the same number of gates.")
-    Q = len(noiseless_operator)
-    row = operator_position(noiseless_operator)
-    col = operator_position(noisy_operator)
-    w_inverse = w_matrix_inverse(Q)
+    row = noiseless_operator.position
+    col = noisy_operator.position
+    w_inverse = w_matrix_inverse(noiseless_operator.Q)
     return w_inverse[row, col]
 
 
@@ -218,10 +155,9 @@ def relevant_operators(noiseless_operator: OrderedOperator) -> OrderedOperators:
     Go through all columns of w^-1 for the row given by the noiseless_operator and finde
     those matrix elements which are not 0.
     """
-    Q = len(noiseless_operator)
-    row = operator_position(noiseless_operator)
-    noisy_operators = lexicographic_ordered_operators(Q)
-    w_inverse = w_matrix_inverse(Q)
+    row = noiseless_operator.position
+    noisy_operators = lexicographic_ordered_operators(noiseless_operator.Q)
+    w_inverse = w_matrix_inverse(noiseless_operator.Q)
     return [operator for operator, w_entry in zip(noisy_operators, w_inverse.row(row)) if w_entry != 0]
 
 
@@ -271,16 +207,3 @@ def unravel_symbol(symbol: Symbol) -> Bitflip:
         return Bitflip(from_state=from_state, to_state=to_state, qubit=qubit)
     else:
         raise ValueError("Not a matching symbol.")
-
-
-def operator_to_circ(operator: OrderedOperator) -> QuantumCircuit:
-    qubits = len(operator)
-    circ = QuantumCircuit(qubits)
-    for qubit, gate in enumerate(operator):
-        if isinstance(gate, IGate):
-            circ.i(qubit)
-        elif isinstance(gate, ZGate):
-            circ.z(qubit)
-        else:
-            raise RuntimeError
-    return circ

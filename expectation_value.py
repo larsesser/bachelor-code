@@ -12,8 +12,8 @@ from qiskit.circuit.instruction import Instruction
 from qiskit.algorithms.phase_estimators.phase_estimation import PhaseEstimation
 from qiskit.algorithms.phase_estimators.phase_estimation_result import PhaseEstimationResult
 
-from qiskit.circuit.library.standard_gates import IGate, ZGate
 from w import OrderedOperator
+from ordered_operator import IGate, ZGate
 
 
 def hadamard_test_circ(state: QuantumCircuit, operator: OrderedOperator) -> QuantumCircuit:
@@ -27,7 +27,7 @@ def hadamard_test_circ(state: QuantumCircuit, operator: OrderedOperator) -> Quan
 
     Reference: https://en.wikipedia.org/wiki/Hadamard_test_(quantum_computation)
     """
-    if state.num_qubits != len(operator):
+    if state.num_qubits != operator.Q:
         raise ValueError("State and operator must have the same number ob qubits.")
 
     # create new registers for the ancilla qubit, the measure and the state |psi>.
@@ -43,7 +43,7 @@ def hadamard_test_circ(state: QuantumCircuit, operator: OrderedOperator) -> Quan
     # apply the controlled operator to the state qubits. Since the operator consists
     # only of IGates and ZGates, this is rather easy.
     # TODO this should be encapsulated in the w.py file...
-    for qubit, gate in enumerate(operator):
+    for qubit, gate in enumerate(operator.gates):
         if isinstance(gate, IGate):
             continue
         elif isinstance(gate, ZGate):
