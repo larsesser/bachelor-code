@@ -3,20 +3,12 @@ import re
 from typing import Dict, NamedTuple, List, Tuple
 from sympy import Symbol, zeros, Matrix, ImmutableMatrix, Expr, S
 from sympy.printing import sstr
-from itertools import product
 
-from ordered_operator import IGate, ZGate, OrderedGate, OrderedOperator, OrderedOperators
+from ordered_operator import IGate, ZGate, OrderedGate, OrderedOperator, OrderedOperators, lexicographic_ordered_operators
 
 # use global variables to cache calculated matrices
 _W_MATRIX_DIMENSION: Dict[int, ImmutableMatrix] = dict()
 _W_MATRIX_INVERSE_DIMENSION: Dict[int, ImmutableMatrix] = dict()
-
-
-def lexicographic_ordered_operators(Q: int) -> OrderedOperators:
-    """Returns all combinations of Q operators, in lexicographic order."""
-    # TODO: check if this works as expected
-    operators: List[Tuple[OrderedGate, ...]] = list(product([IGate(), ZGate()], repeat=Q))
-    return [OrderedOperator(*operator) for operator in operators]
 
 
 def w_matrix(Q: int) -> ImmutableMatrix:

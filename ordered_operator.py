@@ -1,5 +1,6 @@
 from functools import total_ordering
-from typing import Sequence, Tuple
+from typing import List, Sequence, Tuple
+from itertools import product
 
 # a bunch of operators acting on one or more qubits
 OrderedOperators = Sequence["OrderedOperator"]
@@ -95,3 +96,10 @@ class OrderedOperator:
     def Q(self) -> int:
         """The dimension of the operator."""
         return len(self.gates)
+
+
+def lexicographic_ordered_operators(Q: int) -> OrderedOperators:
+    """Returns all combinations of Q operators, in lexicographic order."""
+    # TODO: check if this works as expected
+    operators: List[Tuple[OrderedGate, ...]] = list(product([IGate(), ZGate()], repeat=Q))
+    return [OrderedOperator(*operator) for operator in operators]
