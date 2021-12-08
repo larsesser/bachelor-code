@@ -1,7 +1,7 @@
 import re
 
 from typing import Dict, Union, overload, Sequence, NamedTuple
-from sympy import Symbol, zeros, Matrix, ImmutableMatrix, Expr
+from sympy import Symbol, zeros, Matrix, ImmutableMatrix, Expr, S
 from sympy.printing import sstr
 from itertools import product
 
@@ -154,23 +154,23 @@ def w_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperat
     """
     # w is a lower triangular matrix, so the upper right part of the matrix is 0
     if lexicographic_less(noisy_operator, noiseless_operator):
-        return 0
+        return S(0)
 
-    ret = 1
+    ret = S(1)
     for qubit, (noiseless_gate, noisy_gate) in enumerate(zip(noiseless_operator, noisy_operator)):
         if isinstance(noiseless_gate, IGate) and isinstance(noisy_gate, IGate):
-            ret *= 1
+            ret *= S(1)
         elif isinstance(noiseless_gate, IGate) and isinstance(noisy_gate, ZGate):
             p0_q = p0_symbol(qubit)
             p1_q = p1_symbol(qubit)
             ret *= p1_q - p0_q
         elif isinstance(noiseless_gate, ZGate) and isinstance(noisy_gate, IGate):
-            ret *= 0
+            ret *= S(0)
             break
         elif isinstance(noiseless_gate, ZGate) and isinstance(noisy_gate, ZGate):
             p0_q = p0_symbol(qubit)
             p1_q = p1_symbol(qubit)
-            ret *= 1 - p0_q - p1_q
+            ret *= S(1) - p0_q - p1_q
         else:
             print(noiseless_operator)
             print(noisy_operator)
