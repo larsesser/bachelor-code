@@ -156,8 +156,11 @@ def w_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperat
     if lexicographic_less(noisy_operator, noiseless_operator):
         return S(0)
 
+    # take care, since we enumerate our qubits conventionally from right to left!
+    qubits = range(len(noiseless_operator))[::-1]
+
     ret = S(1)
-    for qubit, (noiseless_gate, noisy_gate) in enumerate(zip(noiseless_operator, noisy_operator)):
+    for qubit, noiseless_gate, noisy_gate in zip(qubits, noiseless_operator, noisy_operator):
         if isinstance(noiseless_gate, IGate) and isinstance(noisy_gate, IGate):
             ret *= S(1)
         elif isinstance(noiseless_gate, IGate) and isinstance(noisy_gate, ZGate):
