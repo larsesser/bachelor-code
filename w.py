@@ -124,7 +124,10 @@ def w_matrix(Q: int) -> ImmutableMatrix:
     return _W_MATRIX_DIMENSION[Q]
 
 
-def w_matrix_inverse(Q: int) -> ImmutableMatrix:
+# TODO This gets very slow for Q>2. Maybe use simplification expressions like expand()
+#  to decrease computation time? Or save matrices on disk between computations?
+#  Or simply insert the probabilities directly?
+def w_matrix_inverse(Q: int, error_probabilities=None) -> ImmutableMatrix:
     """Calculate the inverse w matrix.
 
     This is used to actually error correct an operator from several noisy operator
@@ -135,7 +138,20 @@ def w_matrix_inverse(Q: int) -> ImmutableMatrix:
     if Q in _W_MATRIX_INVERSE_DIMENSION:
         return _W_MATRIX_INVERSE_DIMENSION[Q]
 
+    if error_probabilities:
+        if not all(unravel_symbol(symbol).qubit in range(Q) for symbol in error_probabilities.keys()):
+            raise ValueError(
+                "A given error affects a qubit which is out of range of the given operator.")
+        if 2 * Q != len(error_probabilities):
+            raise ValueError("Not all error probabilities were specified"
+                             " (flipping |0> -> |1> and flipping |1> -> |0>.")
+
     matrix = w_matrix(Q)
+    if error_probabilities:
+        # ensure the probabilities are taken accurate as sympy numbers
+        error_probabilities = {key: S(value) for key, value in error_probabilities.items()}
+        # cut-off very small numbers (<< 10^-50)
+        matrix = matrix.evalf(subs=error_probabilities, chop=True)
     _W_MATRIX_INVERSE_DIMENSION[Q] = matrix.inverse()
 
     return _W_MATRIX_INVERSE_DIMENSION[Q]
