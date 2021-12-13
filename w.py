@@ -102,24 +102,24 @@ def w_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperat
     if noisy_operator < noiseless_operator:
         return S(0)
 
-    # take care, since we enumerate our qubits conventionally from right to left!
-    qubits = range(noiseless_operator.Q)[::-1]
-
     ret = S(1)
-    for qubit, noiseless_gate, noisy_gate in zip(qubits, noiseless_operator.gates, noisy_operator.gates):
+    for noiseless_gate, noisy_gate in zip(noiseless_operator.gates, noisy_operator.gates):
+        if noisy_gate.qubit != noiseless_gate.qubit:
+            raise ValueError("NoisyGate and NoislessGate must act on the same qubit!")
+        qubit = noisy_gate.qubit
         if isinstance(noiseless_gate, IGate) and isinstance(noisy_gate, IGate):
             ret *= S(1)
         elif isinstance(noiseless_gate, IGate) and isinstance(noisy_gate, ZGate):
             p0_q = p0_symbol(qubit)
             p1_q = p1_symbol(qubit)
-            ret *= p1_q - p0_q
+            ret *= (p1_q - p0_q)
         elif isinstance(noiseless_gate, ZGate) and isinstance(noisy_gate, IGate):
             ret *= S(0)
             break
         elif isinstance(noiseless_gate, ZGate) and isinstance(noisy_gate, ZGate):
             p0_q = p0_symbol(qubit)
             p1_q = p1_symbol(qubit)
-            ret *= S(1) - p0_q - p1_q
+            ret *= (S(1) - p0_q - p1_q)
         else:
             print(noiseless_operator)
             print(noisy_operator)

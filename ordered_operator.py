@@ -10,6 +10,8 @@ OrderedOperators = Sequence["OrderedOperator"]
 class OrderedGate:
     # the name of the operator
     name: str
+    # the qubit on which the gate will act
+    qubit: int
     # the order of the operator, considered by the lexicographic order.
     order: int = 0
     # used to determine the position of the operator containing this gate
@@ -25,6 +27,9 @@ class OrderedGate:
             raise NotImplementedError("Can only compare OrderedGates!")
         return self.order < other.order
 
+    def __init__(self, qubit: int):
+        self.qubit = qubit
+
 
 class IGate(OrderedGate):
     name = "I"
@@ -32,7 +37,7 @@ class IGate(OrderedGate):
     as_bitstring = "0"
 
     def __str__(self):
-        return "I"
+        return f"I({self.qubit})"
 
     def __repr__(self):
         return self.__str__()
@@ -44,7 +49,7 @@ class ZGate(OrderedGate):
     as_bitstring = "1"
 
     def __str__(self):
-        return "Z"
+        return f"Z({self.qubit})"
 
     def __repr__(self):
         return self.__str__()
@@ -100,5 +105,24 @@ class OrderedOperator:
 
 def lexicographic_ordered_operators(Q: int) -> OrderedOperators:
     """Returns all combinations of Q operators, in lexicographic order."""
-    operators: List[Tuple[OrderedGate, ...]] = list(product([IGate(), ZGate()], repeat=Q))
-    return [OrderedOperator(*operator) for operator in operators]
+    # create all combinations of OrderedGates in lexicographic order
+    # note that the qubit is only set temporarily, we will adjust it later
+    prototypes: List[Tuple[OrderedGate, ...]] = list(product([IGate(-1), ZGate(-2)], repeat=Q))
+
+    operators: List[OrderedOperator] = list()
+    for prototype in prototypes:
+        # take care, since we enumerate our qubits conventionally from right to left!
+        qubits = range(Q)[::-1]
+        gates: List[OrderedGate] = list()
+        # adjust the qubit of each gate to the correct value
+        # attention: all gates are the same instance, so we re-instantiate each gate!
+        for qubit, gate in zip(qubits, prototype):
+            if isinstance(gate, IGate):
+                gate = IGate(qubit)
+            elif isinstance(gate, ZGate):
+                gate = ZGate(qubit)
+            else:
+                raise NotImplementedError
+            gates.append(gate)
+        operators.append(OrderedOperator(*gates))
+    return operators

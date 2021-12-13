@@ -42,12 +42,11 @@ def hadamard_test_circ(state: QuantumCircuit, operator: OrderedOperator) -> Quan
     circ.h(qubit=ancilla_reg)
     # apply the controlled operator to the state qubits. Since the operator consists
     # only of IGates and ZGates, this is rather easy.
-    # TODO this should be encapsulated in the w.py file...
-    for qubit, gate in enumerate(operator.gates):
+    for gate in operator.gates:
         if isinstance(gate, IGate):
-            continue
+            circ.i(gate.qubit)
         elif isinstance(gate, ZGate):
-            circ.cz(control_qubit=ancilla_reg, target_qubit=state_reg[qubit])
+            circ.cz(control_qubit=ancilla_reg, target_qubit=state_reg[gate.qubit])
         else:
             raise NotImplementedError(gate)
     circ.h(qubit=ancilla_reg)
