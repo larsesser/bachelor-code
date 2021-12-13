@@ -190,7 +190,7 @@ def unravel_symbol(symbol: Symbol) -> Bitflip:
     flipping (from_state flipping into to_state) and the affected qubit.
     """
     symbol_str = sstr(symbol)
-    if m := re.match("p(?P<from_state>\d)_(?P<qubit>\d)", symbol_str):
+    if m := re.match(r"p(?P<from_state>\d)_(?P<qubit>\d)", symbol_str):
         if m.group("from_state") not in {"0", "1"}:
             raise ValueError("Not a from_state.")
         from_state = int(m.group("from_state"))

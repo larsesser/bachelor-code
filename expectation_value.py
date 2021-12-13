@@ -78,5 +78,4 @@ def hadamard_test_result(result: Result) -> float:
     prob_0 = count_0 / shots
     prob_1 = count_1 / shots
 
-    # TODO absolute value?
     return prob_0 - prob_1

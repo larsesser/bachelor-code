@@ -102,6 +102,10 @@ class OrderedOperator:
         """The dimension of the operator."""
         return len(self.gates)
 
+    @property
+    def filename(self) -> str:
+        return "".join(str(gate) for gate in self.gates)
+
 
 def lexicographic_ordered_operators(Q: int) -> OrderedOperators:
     """Returns all combinations of Q operators, in lexicographic order."""
