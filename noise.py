@@ -1,6 +1,6 @@
 from typing import Dict, List
 from collections import defaultdict
-from sympy import Symbol
+from sympy import S, Symbol
 
 from qiskit.providers.aer.noise import NoiseModel, ReadoutError
 
@@ -10,6 +10,24 @@ from w import unravel_symbol
 ErrorProbabilities = Dict[Symbol, float]
 
 
+def add_equal_qubit_readout_errors(noise: NoiseModel, error: float, qubits: int):
+    error = S(error)
+    combinations = 2 ** qubits
+    errors = [[0 for _ in range(combinations)] for _ in range(combinations)]
+    for x in range(combinations):
+        for y in range(combinations):
+            # count the places where x and y differ, using the bitwise xor and count the 1s
+            differences = bin(x ^ y).count("1")
+            errors[x][y] = (error ** differences) * ((1 - error) ** (qubits - differences))
+    readout_error = ReadoutError(errors)
+    print(readout_error)
+    noise.add_readout_error(readout_error, qubits=list(range(qubits)))
+    print(noise)
+    return noise
+
+
+# TODO tatsächlich für alle qubits gleichzeitig den readout error angegeben
+#  sowas wie [[(1-p)^2, (1-p)*p, p*(1-p), p^2], [(1-p)*p, (1-p)^2, p^2, (1-p)*p] etc
 def add_single_qubit_readout_errors(noise: NoiseModel, errors: ErrorProbabilities) -> NoiseModel:
     """Add single qubit readout errors to each qubit as defined in errors.
 
