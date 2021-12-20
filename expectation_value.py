@@ -35,7 +35,8 @@ def hadamard_test_circ(state: QuantumCircuit, operator: OrderedOperator) -> Quan
     classic_reg = ClassicalRegister(size=1)
     state_reg = QuantumRegister(size=state.num_qubits)
 
-    circ = QuantumCircuit(ancilla_reg, state_reg, classic_reg, name="Hadamard Test")
+    # take care that the state-reg is before the ancilla-reg to map the noise properly!
+    circ = QuantumCircuit(state_reg, ancilla_reg, classic_reg, name="Hadamard Test")
 
     # prepare the state on the new circ
     circ.append(state.to_instruction(), qargs=state_reg)
