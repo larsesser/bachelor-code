@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
-from typing import List, Tuple, Dict, List, Set
+from typing import List, Tuple, Dict, List, Set, TYPE_CHECKING, Any
 
 import numpy as np
 from time import time
+import statistics
 
 from qiskit import QuantumCircuit
 from qiskit.providers.aer.backends.aerbackend import AerBackend
@@ -18,7 +19,14 @@ from qiskit.circuit.instruction import Instruction
 from qiskit.algorithms.phase_estimators.phase_estimation import PhaseEstimation
 from qiskit.algorithms.phase_estimators.phase_estimation_result import PhaseEstimationResult
 
+from tabulate import tabulate
+
 from pprint import pprint
+
+if TYPE_CHECKING:
+    from z_expectation import TestResult
+else:
+    TestResult = Any
 
 
 AnglePair = Tuple[float, float]
@@ -125,3 +133,47 @@ def init_cb_state(qubits: int, start_qubit: int) -> QuantumCircuit:
     circ = QuantumCircuit(qubits)
     circ.x(start_qubit)
     return circ
+
+
+def print_result(results: List[TestResult]):
+    noisy = [result.noisy for result in results]
+    noiseless = [result.noiseless for result in results]
+    corrected = [result.corrected for result in results]
+
+    noisy_compairson = [
+        abs(noisy_element - noiseless_element) / abs(noiseless_element)
+        for noisy_element, noiseless_element in zip(noisy, noiseless)
+    ]
+    corrected_compairson = [
+        abs(corrected_element - noiseless_element) / abs(noiseless_element)
+        for corrected_element, noiseless_element in zip(corrected, noiseless)
+    ]
+
+    is_corrected_larger = [
+        "!" if corrected_element > noisy_element else ""
+        for corrected_element, noisy_element in zip(corrected_compairson, noisy_compairson)
+    ]
+
+    print(
+        tabulate(
+            zip(noiseless, noisy, corrected, noisy_compairson, corrected_compairson,
+                is_corrected_larger),
+            headers=["Noiseless", "Noisy", "Corrected",
+                     "|(Noisy-Noiseless)|/|Noiseless|",
+                     "|(Corrected-Noiseless)|/|Noiseless|", "C>N"]
+        )
+    )
+
+    print(
+        tabulate(
+            [
+                ["mean", statistics.mean(noisy_compairson),
+                 statistics.mean(corrected_compairson)],
+                ["stdev", statistics.stdev(noisy_compairson),
+                 statistics.stdev(corrected_compairson)],
+                ["median", statistics.median(noisy_compairson),
+                 statistics.median(corrected_compairson)]
+            ],
+            headers=["", "Noisy", "Corrected"]
+        )
+    )
