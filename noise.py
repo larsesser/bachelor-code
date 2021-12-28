@@ -3,8 +3,9 @@ from collections import defaultdict
 from sympy import S, Symbol
 
 from qiskit.providers.aer.noise import NoiseModel, ReadoutError
+from qiskit import QuantumCircuit, transpile, ClassicalRegister, QuantumRegister
 
-from w import unravel_symbol
+from w import unravel_symbol, p0_symbol, p1_symbol
 
 # Mapping a symbol retrieved from w.py p0_symbol / p1_symbol to the flipping probability
 ErrorProbabilities = Dict[Symbol, float]
@@ -54,3 +55,27 @@ def add_single_qubit_readout_errors(noise: NoiseModel, errors: ErrorProbabilitie
         noise.add_readout_error(error=ReadoutError(error), qubits=[qubit])
 
     return noise
+
+
+def measure_errors(backend, qubits: int) -> ErrorProbabilities:
+    """Measure the error probabilites of a given backend for the given number of qubits."""
+    ret = dict()
+    shots = backend.options.get("shots")
+    for qubit in range(qubits):
+        qreg = QuantumRegister(qubits)
+        creg = ClassicalRegister(1)
+        circ = QuantumCircuit(qreg, creg)
+        circ.measure(qubit, creg)
+        circ = transpile(circ, backend, seed_transpiler=42)
+        counts = backend.run(circ).result().get_counts()
+        ret[p0_symbol(qubit)] = counts.get("1", 0) / shots
+    for qubit in range(qubits):
+        qreg = QuantumRegister(qubits)
+        creg = ClassicalRegister(1)
+        circ = QuantumCircuit(qreg, creg)
+        circ.x(qubit)
+        circ.measure(qubit, creg)
+        circ = transpile(circ, backend, seed_transpiler=42)
+        counts = backend.run(circ).result().get_counts()
+        ret[p1_symbol(qubit)] = counts.get("0", 0) / shots
+    return ret
