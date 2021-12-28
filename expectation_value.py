@@ -45,7 +45,7 @@ def hadamard_test_circ(state: QuantumCircuit, operator: OrderedOperator) -> Quan
     # only of IGates and ZGates, this is rather easy.
     for gate in operator.gates:
         if isinstance(gate, IGate):
-            circ.i(gate.qubit)
+            circ.i(state_reg[gate.qubit])
         elif isinstance(gate, ZGate):
             circ.cz(control_qubit=ancilla_reg, target_qubit=state_reg[gate.qubit])
         else:
