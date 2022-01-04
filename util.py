@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 from typing import List, Tuple, Dict, List, Set, TYPE_CHECKING, Any
 
 import numpy as np
