@@ -16,6 +16,38 @@ from w import OrderedOperator
 from ordered_operator import IGate, ZGate
 
 
+def my_test_circ(state: QuantumCircuit, operator: OrderedOperator) -> QuantumCircuit:
+    """Obtain <state|operator|state> by literally applying the state and its dagger."""
+    if state.num_qubits != operator.Q:
+        raise ValueError("State and operator must have the same number ob qubits.")
+
+    # create new registers
+    classic_reg = ClassicalRegister(size=state.num_qubits)
+    state_reg = QuantumRegister(size=state.num_qubits)
+
+    circ = QuantumCircuit(state_reg, classic_reg, name="My Test")
+
+    # apply <psi| ...
+    circ.append(state.to_instruction(), qargs=state_reg)
+
+    # ... apply operator ...
+    for gate in operator.gates:
+        if isinstance(gate, IGate):
+            circ.i(state_reg[gate.qubit])
+        elif isinstance(gate, ZGate):
+            circ.z(state_reg[gate.qubit])
+        else:
+            raise NotImplementedError(gate)
+
+    # ... apply |psi>
+    circ.append(state.inverse().to_instruction(), qargs=state_reg)
+
+    circ.barrier()
+    circ.measure(state_reg, classic_reg)
+
+    return circ
+
+
 def hadamard_test_circ(state: QuantumCircuit, operator: OrderedOperator) -> QuantumCircuit:
     """Obtain Re(<state|operator|state>) using the Hadamard Test.
 
@@ -59,7 +91,33 @@ def hadamard_test_circ(state: QuantumCircuit, operator: OrderedOperator) -> Quan
     return circ
 
 
-def hadamard_test_result(result: Result) -> float:
+def my_test_result(result: Result, operator=None) -> float:
+    """Convert the measurement outcome of the hadamard test circ to the QM expectation value.
+
+    We calculate the probability for measuring 0, then for measuring 1. The real part of
+    the expectation value is then the difference between the two probabilities.
+    """
+    if len(result.results) != 1:
+        raise RuntimeError("More than one experiment is present.")
+
+    shots: int = result.results[0].shots
+    counts = result.get_counts()
+    print("\t\t".join([f"{key}:{value}" for key, value in sorted(counts.items())]), "\t\t", operator)
+
+    if "0" in counts or "1" in counts:
+        count_0 = counts.get("0", 0)
+        count_1 = counts.get("1", 0)
+        return (count_0 - count_1) / shots
+
+    count_00 = counts.get("00", 0)
+    count_01 = counts.get("01", 0)
+    count_10 = counts.get("10", 0)
+    count_11 = counts.get("11", 0)
+
+    return ((count_00 + count_01 - count_10 - count_11) / shots) * ((count_00 - count_01 + count_10 - count_11) / shots)
+
+
+def hadamard_test_result(result: Result, operator=None) -> float:
     """Convert the measurement outcome of the hadamard test circ to the QM expectation value.
 
     We calculate the probability for measuring 0, then for measuring 1. The real part of
@@ -72,11 +130,9 @@ def hadamard_test_result(result: Result) -> float:
     counts = result.get_counts()
     count_0 = counts.get("0", 0)
     count_1 = counts.get("1", 0)
+    print("\t".join([str(value) for key, value in sorted(counts.items())]), "\t\t\t", operator)
 
     if count_0 + count_1 != shots:
         raise ValueError(f"0_count {count_0} + 1_count {count_1} != shots {shots}.")
 
-    prob_0 = count_0 / shots
-    prob_1 = count_1 / shots
-
-    return prob_0 - prob_1
+    return (count_0 - count_1) / shots
