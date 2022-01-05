@@ -154,3 +154,23 @@ def hadamard_test_result(result: Result, operator=None) -> float:
         raise ValueError(f"0_count {count_0} + 1_count {count_1} != shots {shots}.")
 
     return (count_0 - count_1) / shots
+
+
+def projective_measurement(result: Result, operator: OrderedOperator) -> float:
+    if len(result.results) != 1:
+        raise RuntimeError("More than one experiment is present.")
+
+    shots: int = result.results[0].shots
+    counts = result.get_counts()
+
+    # validate the counts dict
+    if any(len(key) != operator.Q for key in counts):
+        raise ValueError("Malformed key in counts dict")
+    if sum(counts.values()) != shots:
+        raise ValueError("The entries of the counts dict doesn't sum up to the number of shots.")
+
+    # all possible measurement outcomes and thereby all possible keys of the counts dict
+    keys = [format(key, f'0{operator.Q}b') for key in range(2**operator.Q)]
+    #print("\t\t".join(f"{key}:{operator.sign(key)}{counts.get(key, 0)}" for key in keys), "\t\t", operator)
+
+    return sum(operator.sign(key) * counts[key] for key in counts) / shots

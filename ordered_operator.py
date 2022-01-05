@@ -106,6 +106,16 @@ class OrderedOperator:
     def filename(self) -> str:
         return "".join(str(gate) for gate in self.gates)
 
+    def sign(self, bitstring: str) -> int:
+        """Determine the sign of the given bitstring for calculation of expectation value of this operator.
+
+        The sign gets a factor of -1 for each 1 in the bitstring if the corresponding
+        gate of the operator is a Z gate.
+        """
+        gate_string = "".join([gate.as_bitstring for gate in self.gates])
+        one_and_z = bin(int(bitstring, base=2) & int(gate_string, base=2)).count("1")
+        return (-1) ** one_and_z
+
 
 def lexicographic_ordered_operators(Q: int) -> OrderedOperators:
     """Returns all combinations of Q operators, in lexicographic order."""
