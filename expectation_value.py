@@ -91,30 +91,48 @@ def hadamard_test_circ(state: QuantumCircuit, operator: OrderedOperator) -> Quan
     return circ
 
 
-def my_test_result(result: Result, operator=None) -> float:
-    """Convert the measurement outcome of the hadamard test circ to the QM expectation value.
+def my_test_result(result: Result, operator: OrderedOperator) -> float:
+    """Convert the measurement outcome to the QM expectation value.
 
-    We calculate the probability for measuring 0, then for measuring 1. The real part of
-    the expectation value is then the difference between the two probabilities.
+    Its assumed that each qubit is independently affected from the bitflip noise. So,
+    we can calculate the expectation value for each bit separately:
+
+    For only one bit, the expectation value reads:
+        (count_0 - count_1) / shots
+
+    For two bits, we sum up for each bit all 0 count and all 1 counts and divide by shots.
+    So, for the first bit we get:
+        (count_00 + count_01 - count_10 - count_11) / shots
+    and for the second bit we get:
+        (count_00 - count_01 + count_10 - count_11) / shots
+    The overall result is obtained by multiplying the results for both bits.
     """
     if len(result.results) != 1:
         raise RuntimeError("More than one experiment is present.")
 
     shots: int = result.results[0].shots
     counts = result.get_counts()
-    print("\t\t".join([f"{key}:{value}" for key, value in sorted(counts.items())]), "\t\t", operator)
 
-    if "0" in counts or "1" in counts:
-        count_0 = counts.get("0", 0)
-        count_1 = counts.get("1", 0)
-        return (count_0 - count_1) / shots
+    # validate the counts dict
+    if any(len(key) != operator.Q for key in counts):
+        raise ValueError("Malformed key in counts dict")
+    if sum(counts.values()) != shots:
+        raise ValueError("The entries of the counts dict doesn't sum up to the number of shots.")
 
-    count_00 = counts.get("00", 0)
-    count_01 = counts.get("01", 0)
-    count_10 = counts.get("10", 0)
-    count_11 = counts.get("11", 0)
+    # all possible measurement outcomes and thereby all possible keys of the counts dict
+    keys = [format(key, f'0{operator.Q}b') for key in range(2**operator.Q)]
+    print("\t\t".join(f"{key}:{counts.get(key, 0)}" for key in keys), "\t\t", operator)
 
-    return ((count_00 + count_01 - count_10 - count_11) / shots) * ((count_00 - count_01 + count_10 - count_11) / shots)
+    expectation = 1
+    for qubit in range(operator.Q):
+        # determine all keys where the current qubit was measured as 1 / 0
+        # normally we enumerate our qubits from right to left, however since we iterate
+        # over all qubits, it doesn't matter here
+        one_keys = [key for key in keys if key[qubit] == '1']
+        zero_keys = [key for key in keys if key[qubit] == '0']
+        expectation *= (sum(counts.get(key, 0) for key in zero_keys) - sum(counts.get(key, 0) for key in one_keys)) / shots
+
+    return expectation
 
 
 def hadamard_test_result(result: Result, operator=None) -> float:
