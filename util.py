@@ -112,21 +112,17 @@ def init_random_state(qubits: int, angles: List[Tuple[float, float]]) -> Quantum
 
     circ = QuantumCircuit(qubits)
 
+    # prepare each qubit in an arbitrary state on the bloch sphere
     for bit, (sigma, theta) in enumerate(angles):
-        # prepare an arbitrary state on the bloch sphere
         circ.rx(sigma, bit)
         circ.rz(theta, bit)
 
-    # TODO entangle the qubits!
-    # for bit1 in range(qubits):
-    #     for bit2 in range(qubits):
-    #         if bit1 == bit2:
-    #             continue
-    #         circ.cnot(bit1, bit2)
-
-        # add CNOTs to accomplish entanglement between the qubits
-        #for prev_bit in range(bit):
-        #    circ.cnot(control_qubit=bit, target_qubit=prev_bit)
+    # entangle the qubits
+    for bit1 in range(qubits):
+        for bit2 in range(qubits):
+            if bit1 == bit2:
+                continue
+            circ.cnot(bit1, bit2)
 
     return circ
 
