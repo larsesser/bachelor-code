@@ -62,6 +62,15 @@ class OrderedOperator:
     def __init__(self, *gates: OrderedGate):
         if not all(isinstance(gate, OrderedGate) for gate in gates):
             raise ValueError("Expected a sequence of OrderedGates!")
+        qubits = [gate.qubit for gate in gates]
+        if len(set(qubits)) != len(qubits):
+            raise ValueError("All gates must act on differen qubits!")
+        qubits2 = qubits.copy()
+        qubits2.sort(reverse=True)
+        if qubits != qubits2:
+            raise ValueError("Gates must be provided in descending order!")
+        if len(qubits) != (qubits[0] + 1):
+            raise ValueError("A gate must be applied to all qubits inbetween!")
         self.gates = tuple(gates)
 
     def __eq__(self, other):
