@@ -111,10 +111,6 @@ class OrderedOperator:
         """The dimension of the operator."""
         return len(self.gates)
 
-    @property
-    def filename(self) -> str:
-        return "".join(str(gate) for gate in self.gates)
-
     def sign(self, bitstring: str) -> int:
         """Determine the sign of the given bitstring for calculation of expectation value of this operator.
 

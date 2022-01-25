@@ -1,10 +1,10 @@
 import re
 
-from typing import Dict, NamedTuple, List, Tuple
+from typing import Dict, NamedTuple
 from sympy import Symbol, zeros, Matrix, ImmutableMatrix, Expr, S
 from sympy.printing import sstr
 
-from ordered_operator import IGate, ZGate, OrderedGate, OrderedOperator, OrderedOperators, lexicographic_ordered_operators
+from ordered_operator import IGate, ZGate, OrderedOperator, OrderedOperators, lexicographic_ordered_operators
 
 # use global variables to cache calculated matrices
 _W_MATRIX_DIMENSION: Dict[int, ImmutableMatrix] = dict()
