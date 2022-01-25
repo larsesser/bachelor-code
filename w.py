@@ -11,7 +11,7 @@ _W_MATRIX_DIMENSION: Dict[int, ImmutableMatrix] = dict()
 _W_MATRIX_INVERSE_DIMENSION: Dict[int, ImmutableMatrix] = dict()
 
 
-def w_matrix(Q: int) -> ImmutableMatrix:
+def w_matrix(Q: int, error_probabilities) -> ImmutableMatrix:
     """Return the w-matrix for a given number Q of operators.
 
     Suppose we have a total of Q operators (Pauli-Z or Identity), acting on Q qubits.
@@ -30,13 +30,21 @@ def w_matrix(Q: int) -> ImmutableMatrix:
         | E ( \tilde{Z} \tilde{Z} ) |            | Z Z |
         ––                         ––            ––   ––
 
-    The matrix is filled with sympy symbols for the bit-flip probabilities of each
-    qubit, which should be inserted using sympy.substitute later one. In this way,
-    the matrix for a number of Q qubits need to be computed only once.
+    To save a great amount of computation time when we later need to invert the matrix,
+    the error probabilities are directly substituted with the given values.
     """
     # use cached matrix if available
     if Q in _W_MATRIX_DIMENSION:
         return _W_MATRIX_DIMENSION[Q]
+
+    # check given error probabilities
+    if not all(unravel_symbol(symbol).qubit in range(Q) for symbol in error_probabilities.keys()):
+        raise ValueError("A given error affects a qubit which is out of range of the given operator.")
+    if 2 * Q != len(error_probabilities):
+        raise ValueError("Not all error probabilities were specified"
+                         " (flipping |0> -> |1> and flipping |1> -> |0>.")
+    # ensure the probabilities are taken accurate as sympy numbers
+    error_probabilities = {key: S(value) for key, value in error_probabilities.items()}
 
     noiseless_operators = lexicographic_ordered_operators(Q)
     noisy_operators = lexicographic_ordered_operators(Q)
@@ -48,46 +56,35 @@ def w_matrix(Q: int) -> ImmutableMatrix:
         for col, noiseless_operator in enumerate(noiseless_operators):
             matrix[row, col] = w_element(noiseless_operator, noisy_operator)
 
+    # substitute the probabilities in the matrix, cut-off very small numbers (<< 10^-50)
+    matrix = matrix.evalf(subs=error_probabilities, chop=True)
+
     # cache matrix
     _W_MATRIX_DIMENSION[Q] = ImmutableMatrix(matrix)
 
     return _W_MATRIX_DIMENSION[Q]
 
 
-# TODO This gets very slow for Q>2. Maybe use simplification expressions like expand()
-#  to decrease computation time? Or save matrices on disk between computations?
-#  Or simply insert the probabilities directly?
-def w_matrix_inverse(Q: int, error_probabilities=None) -> ImmutableMatrix:
+def w_matrix_inverse(Q: int) -> ImmutableMatrix:
     """Calculate the inverse w matrix.
 
     This is used to actually error correct an operator from several noisy operator
-    expectation values. Note that this still contains the placeholders for the
-    probabilities.
+    expectation values. Note that the values for the probabilities are directly inserted.
     """
     # use cached matrix if available
     if Q in _W_MATRIX_INVERSE_DIMENSION:
         return _W_MATRIX_INVERSE_DIMENSION[Q]
 
-    if error_probabilities:
-        if not all(unravel_symbol(symbol).qubit in range(Q) for symbol in error_probabilities.keys()):
-            raise ValueError(
-                "A given error affects a qubit which is out of range of the given operator.")
-        if 2 * Q != len(error_probabilities):
-            raise ValueError("Not all error probabilities were specified"
-                             " (flipping |0> -> |1> and flipping |1> -> |0>.")
+    if Q not in _W_MATRIX_DIMENSION:
+        raise RuntimeError("First call w_matrix explicitly to compute the matrix.")
+    matrix = _W_MATRIX_DIMENSION[Q]
 
-    matrix = w_matrix(Q)
-    if error_probabilities:
-        # ensure the probabilities are taken accurate as sympy numbers
-        error_probabilities = {key: S(value) for key, value in error_probabilities.items()}
-        # cut-off very small numbers (<< 10^-50)
-        matrix = matrix.evalf(subs=error_probabilities, chop=True)
     _W_MATRIX_INVERSE_DIMENSION[Q] = matrix.inverse()
 
     return _W_MATRIX_INVERSE_DIMENSION[Q]
 
 
-def w_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperator):
+def w_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperator) -> Expr:
     """Calculate one entry of the w_matrix.
 
     The entry depends on the noise free operators (column) and noisy operators (row).
