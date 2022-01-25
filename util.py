@@ -6,7 +6,7 @@ from qiskit import QuantumCircuit
 from tabulate import tabulate
 
 if TYPE_CHECKING:
-    from z_expectation import TestResult
+    from test_mitigation import TestResult
 else:
     TestResult = Any
 
