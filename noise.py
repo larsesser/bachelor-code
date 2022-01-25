@@ -1,7 +1,8 @@
 from typing import Dict
-from sympy import Symbol
 
-from qiskit import QuantumCircuit, transpile, ClassicalRegister, QuantumRegister
+from qiskit import (ClassicalRegister, QuantumCircuit, QuantumRegister,
+                    transpile)
+from sympy import Symbol
 
 from w import p0_symbol, p1_symbol
 

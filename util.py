@@ -1,10 +1,8 @@
-from typing import Tuple, List, TYPE_CHECKING, Any
+import statistics
+from typing import TYPE_CHECKING, Any, List, Tuple
 
 import numpy as np
-import statistics
-
 from qiskit import QuantumCircuit
-
 from tabulate import tabulate
 
 if TYPE_CHECKING:

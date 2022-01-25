@@ -1,6 +1,6 @@
 from functools import total_ordering
-from typing import List, Sequence, Tuple
 from itertools import product
+from typing import List, Sequence, Tuple
 
 # a bunch of operators acting on one or more qubits
 OrderedOperators = Sequence["OrderedOperator"]
