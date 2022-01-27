@@ -107,7 +107,7 @@ class OrderedOperator:
         return int(bitstring, base=2)
 
     @property
-    def Q(self) -> int:
+    def N(self) -> int:
         """The dimension of the operator."""
         return len(self.gates)
 
@@ -122,16 +122,16 @@ class OrderedOperator:
         return (-1) ** one_and_z
 
 
-def lexicographic_ordered_operators(Q: int) -> OrderedOperators:
-    """Returns all combinations of Q operators, in lexicographic order."""
+def lexicographic_ordered_operators(N: int) -> OrderedOperators:
+    """Returns all combinations of N dimensional operators, in lexicographic order."""
     # create all combinations of OrderedGates in lexicographic order
     # note that the qubit is only set temporarily, we will adjust it later
-    prototypes: List[Tuple[OrderedGate, ...]] = list(product([IGate(-1), ZGate(-2)], repeat=Q))
+    prototypes: List[Tuple[OrderedGate, ...]] = list(product([IGate(-1), ZGate(-2)], repeat=N))
 
     operators: List[OrderedOperator] = list()
     for prototype in prototypes:
         # take care, since we enumerate our qubits conventionally from right to left!
-        qubits = range(Q)[::-1]
+        qubits = range(N)[::-1]
         gates: List[OrderedGate] = list()
         # adjust the qubit of each gate to the correct value
         # attention: all gates are the same instance, so we re-instantiate each gate!

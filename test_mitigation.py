@@ -49,7 +49,7 @@ def test_projective_measurement(
     :param error_probabilities: the bit-flip probabilities of each qubit.
     """
     # prepare a random state |psi> to be measured
-    state = init_random_state(qubits=operator.Q, angles=random_angles(n_qubits=operator.Q))
+    state = init_random_state(qubits=operator.N, angles=random_angles(n_qubits=operator.N))
     state.measure_all()
 
     # 1. measure the given operator on a noiseless backend
@@ -64,7 +64,7 @@ def test_projective_measurement(
 
     # 3. determine the corrected expectation value
     # calculate the w matrix with the given error probabilities
-    _ = w_matrix(operator.Q, error_probabilities)
+    _ = w_matrix(operator.N, error_probabilities)
     corrected: Expr = S(0)
     for correcting_operator in relevant_operators(operator):
         expectation = projective_measurement(result, correcting_operator)

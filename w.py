@@ -12,18 +12,18 @@ _W_MATRIX_DIMENSION: Dict[int, ImmutableMatrix] = dict()
 _W_MATRIX_INVERSE_DIMENSION: Dict[int, ImmutableMatrix] = dict()
 
 
-def w_matrix(Q: int, error_probabilities) -> ImmutableMatrix:
-    """Return the w-matrix for a given number Q of operators.
+def w_matrix(N: int, error_probabilities) -> ImmutableMatrix:
+    """Return the w-matrix for a given number N of operators.
 
-    Suppose we have a total of Q operators (Pauli-Z or Identity), acting on Q qubits.
+    Suppose we have a total of N operators (Pauli-Z or Identity), acting on N qubits.
     Then, we consider the vector which entries are all possible combinations (with
-    respect to the tensor product) of those operators of length Q. The entries of the
+    respect to the tensor product) of those operators of length N. The entries of the
     operator are ordered by the _lexicographic order_ from top to bottom.
 
     Then, w is the matrix relating the noise-free operators O to the statistical
     expectation value of the operators \tilde{O}.
 
-    For Q=2, this looks as follows (w is a 4x4 matrix, in general a 2^Qx2^Q matrix):
+    For N=2, this looks as follows (w is a 4x4 matrix, in general a 2^Nx2^N matrix):
         ––                         ––            ––   ––
         | E ( \tilde{I} \tilde{I} ) |            | I I |
         | E ( \tilde{I} \tilde{Z} ) |            | I Z |
@@ -35,22 +35,22 @@ def w_matrix(Q: int, error_probabilities) -> ImmutableMatrix:
     the error probabilities are directly substituted with the given values.
     """
     # use cached matrix if available
-    if Q in _W_MATRIX_DIMENSION:
-        return _W_MATRIX_DIMENSION[Q]
+    if N in _W_MATRIX_DIMENSION:
+        return _W_MATRIX_DIMENSION[N]
 
     # check given error probabilities
-    if not all(unravel_symbol(symbol).qubit in range(Q) for symbol in error_probabilities.keys()):
+    if not all(unravel_symbol(symbol).qubit in range(N) for symbol in error_probabilities.keys()):
         raise ValueError("A given error affects a qubit which is out of range of the given operator.")
-    if 2 * Q != len(error_probabilities):
+    if 2 * N != len(error_probabilities):
         raise ValueError("Not all error probabilities were specified"
                          " (flipping |0> -> |1> and flipping |1> -> |0>.")
     # ensure the probabilities are taken accurate as sympy numbers
     error_probabilities = {key: S(value) for key, value in error_probabilities.items()}
 
-    noiseless_operators = lexicographic_ordered_operators(Q)
-    noisy_operators = lexicographic_ordered_operators(Q)
+    noiseless_operators = lexicographic_ordered_operators(N)
+    noisy_operators = lexicographic_ordered_operators(N)
 
-    matrix: Matrix = zeros(2**Q)
+    matrix: Matrix = zeros(2**N)
 
     # fill the matrix with content
     for row, noisy_operator in enumerate(noisy_operators):
@@ -61,28 +61,28 @@ def w_matrix(Q: int, error_probabilities) -> ImmutableMatrix:
     matrix = matrix.evalf(subs=error_probabilities, chop=True)
 
     # cache matrix
-    _W_MATRIX_DIMENSION[Q] = ImmutableMatrix(matrix)
+    _W_MATRIX_DIMENSION[N] = ImmutableMatrix(matrix)
 
-    return _W_MATRIX_DIMENSION[Q]
+    return _W_MATRIX_DIMENSION[N]
 
 
-def w_matrix_inverse(Q: int) -> ImmutableMatrix:
+def w_matrix_inverse(N: int) -> ImmutableMatrix:
     """Calculate the inverse w matrix.
 
     This is used to actually error correct an operator from several noisy operator
     expectation values. Note that the values for the probabilities are directly inserted.
     """
     # use cached matrix if available
-    if Q in _W_MATRIX_INVERSE_DIMENSION:
-        return _W_MATRIX_INVERSE_DIMENSION[Q]
+    if N in _W_MATRIX_INVERSE_DIMENSION:
+        return _W_MATRIX_INVERSE_DIMENSION[N]
 
-    if Q not in _W_MATRIX_DIMENSION:
+    if N not in _W_MATRIX_DIMENSION:
         raise RuntimeError("First call w_matrix explicitly to compute the matrix.")
-    matrix = _W_MATRIX_DIMENSION[Q]
+    matrix = _W_MATRIX_DIMENSION[N]
 
-    _W_MATRIX_INVERSE_DIMENSION[Q] = matrix.inverse()
+    _W_MATRIX_INVERSE_DIMENSION[N] = matrix.inverse()
 
-    return _W_MATRIX_INVERSE_DIMENSION[Q]
+    return _W_MATRIX_INVERSE_DIMENSION[N]
 
 
 def w_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperator) -> Expr:
@@ -90,7 +90,7 @@ def w_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperat
 
     The entry depends on the noise free operators (column) and noisy operators (row).
 
-    For Q=1, the 2x2 w-matrix looks like this:
+    For N=1, the 2x2 w-matrix looks like this:
         ––                                                 ––
         | w_element(I, \tilde{I})   w_element(Z, \tilde{I}) |
         | w_element(I, \tilde{Z})   w_element(Z, \tilde{Z}) |
@@ -131,11 +131,11 @@ def w_inverse_element(noiseless_operator: OrderedOperator, noisy_operator: Order
 
     This is needed to reconstruct the noiseless operator from multiple noisy one.
     """
-    if noiseless_operator.Q != noisy_operator.Q:
+    if noiseless_operator.N != noisy_operator.N:
         raise ValueError("Noisless and noisy operator must contain the same number of gates.")
     row = noiseless_operator.position
     col = noisy_operator.position
-    w_inverse = w_matrix_inverse(noiseless_operator.Q)
+    w_inverse = w_matrix_inverse(noiseless_operator.N)
     return w_inverse[row, col]
 
 
@@ -146,8 +146,8 @@ def relevant_operators(noiseless_operator: OrderedOperator) -> OrderedOperators:
     those matrix elements which are not 0.
     """
     row = noiseless_operator.position
-    noisy_operators = lexicographic_ordered_operators(noiseless_operator.Q)
-    w_inverse = w_matrix_inverse(noiseless_operator.Q)
+    noisy_operators = lexicographic_ordered_operators(noiseless_operator.N)
+    w_inverse = w_matrix_inverse(noiseless_operator.N)
     return [operator for operator, w_entry in zip(noisy_operators, w_inverse.row(row)) if w_entry != 0]
 
 
@@ -156,7 +156,7 @@ def p0_symbol(q: int) -> Symbol:
 
     We use sympy symbols to add placeholders into the w matrix. This placeholders will
     be substituted later using sympy.substitute, so we need to calculate the w matrix
-    only once per number of operators Q.
+    only once per number of operators N.
 
     This functions is used to provide a consistent naming scheme.
     """
@@ -168,7 +168,7 @@ def p1_symbol(q: int) -> Symbol:
 
     We use sympy symbols to add placeholders into the w matrix. This placeholders will
     be substituted later using sympy.substitute, so we need to calculate the w matrix
-    only once per number of operators Q.
+    only once per number of operators N.
 
     This functions is used to provide a consistent naming scheme.
     """

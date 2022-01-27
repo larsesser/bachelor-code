@@ -11,13 +11,13 @@ def projective_measurement(result: Result, operator: OrderedOperator) -> float:
     counts = result.get_counts()
 
     # validate the counts dict
-    if any(len(key) != operator.Q for key in counts):
+    if any(len(key) != operator.N for key in counts):
         raise ValueError("Malformed key in counts dict")
     if sum(counts.values()) != shots:
         raise ValueError("The entries of the counts dict doesn't sum up to the number of shots.")
 
     # all possible measurement outcomes and thereby all possible keys of the counts dict
-    keys = [format(key, f'0{operator.Q}b') for key in range(2**operator.Q)]
+    #keys = [format(key, f'0{operator.N}b') for key in range(2**operator.N)]
     #print("\t\t".join(f"{key}:{operator.sign(key)}{counts.get(key, 0)}" for key in keys), "\t\t", operator)
 
     return sum(operator.sign(key) * counts[key] for key in counts) / shots
