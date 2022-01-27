@@ -5,7 +5,7 @@ from qiskit.providers.aer.backends.aerbackend import AerBackend
 from qiskit.result.result import Result
 from sympy import Expr, S
 
-from expectation_value import projective_measurement
+from expectation_value import expectation_value
 from noise import ErrorProbabilities
 from util import init_random_state, random_angles
 from w import OrderedOperator, relevant_operators, w_inverse_element, w_matrix
@@ -60,19 +60,19 @@ def benchmark_mitigation(
     # 1. measure the given operator on a noiseless backend
     circ = transpile(state, noiseless_backend)
     noiseless_result: Result = noiseless_backend.run(circ).result()
-    noiseless = projective_measurement(noiseless_result, operator)
+    noiseless = expectation_value(noiseless_result, operator)
 
     # 2. measure the given operator on a noisy backend
     circ = transpile(state, noisy_backend)
     noisy_result: Result = noisy_backend.run(circ).result()
-    noisy = projective_measurement(noisy_result, operator)
+    noisy = expectation_value(noisy_result, operator)
 
     # 3. determine the corrected expectation value
     # calculate the w matrix with the given error probabilities
     _ = w_matrix(operator.N, error_probabilities)
     corrected: Expr = S(0)
     for correcting_operator in relevant_operators(operator):
-        expectation = projective_measurement(noisy_result, correcting_operator)
+        expectation = expectation_value(noisy_result, correcting_operator)
         correcting_factor = w_inverse_element(operator, correcting_operator)
         corrected += correcting_factor * expectation
 

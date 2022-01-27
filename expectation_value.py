@@ -3,7 +3,7 @@ from qiskit.result.result import Result
 from w import OrderedOperator
 
 
-def projective_measurement(result: Result, operator: OrderedOperator) -> float:
+def expectation_value(result: Result, operator: OrderedOperator) -> float:
     """Calculate the expectation value from the given operator.
 
     This assumes that measurement was done in the computational basis.
