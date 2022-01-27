@@ -14,29 +14,29 @@ else:
 AnglePair = Tuple[float, float]
 
 
-def random_angles(n_qubits: int) -> List[AnglePair]:
-    """Draws a pair of angles from [0, 2*pi) for each Qubit."""
+def random_angles(N: int) -> List[AnglePair]:
+    """Draw a pair of angles from [0, 2*pi) for each qubit."""
     return [
         (
             np.random.uniform(low=0, high=2 * np.pi),
             np.random.uniform(low=0, high=2 * np.pi)
         )
-        for _ in range(n_qubits)
+        for _ in range(N)
     ]
 
 
-def init_random_state(qubits: int, angles: List[Tuple[float, float]]) -> QuantumCircuit:
+def init_random_state(N: int, angles: List[Tuple[float, float]]) -> QuantumCircuit:
     """Returns a QuantumCircuit where each qubit is initialized in a random state.
 
     The random state is realised through an RX and RZ gate acting on each qubit and
     using the angles provided in angles[qubit]. To realise entangled states, a CX gate
     is applied to each forwarding combination of qubits.
     """
-    if qubits != len(angles):
-        raise ValueError(f"Must provide equal number of qubits ({qubits}) and pairs of"
+    if N != len(angles):
+        raise ValueError(f"Must provide equal number of qubits ({N}) and pairs of"
                          f"angles ({len(angles)}).")
 
-    circ = QuantumCircuit(qubits)
+    circ = QuantumCircuit(N)
 
     # prepare each qubit in an arbitrary state on the bloch sphere
     for bit, (sigma, theta) in enumerate(angles):
@@ -44,8 +44,8 @@ def init_random_state(qubits: int, angles: List[Tuple[float, float]]) -> Quantum
         circ.rz(theta, bit)
 
     # entangle the qubits
-    for bit1 in range(qubits):
-        for bit2 in range(qubits):
+    for bit1 in range(N):
+        for bit2 in range(N):
             if bit1 == bit2:
                 continue
             circ.cnot(bit1, bit2)

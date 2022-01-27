@@ -49,7 +49,7 @@ def test_projective_measurement(
     :param error_probabilities: the bit-flip probabilities of each qubit.
     """
     # prepare a random state |psi> to be measured
-    state = init_random_state(qubits=operator.N, angles=random_angles(n_qubits=operator.N))
+    state = init_random_state(operator.N, angles=random_angles(operator.N))
     state.measure_all()
 
     # 1. measure the given operator on a noiseless backend
