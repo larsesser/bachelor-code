@@ -58,7 +58,7 @@ class ZGate(OrderedGate):
 
 @total_ordering
 class OrderedOperator:
-    """An operator consisting of multiple gates which support lexicographic order."""
+    """Operator consisting of multiple gates supporting lexicographic order."""
     gates: Tuple[OrderedGate]
 
     def __init__(self, *gates: OrderedGate):
@@ -66,7 +66,7 @@ class OrderedOperator:
             raise ValueError("Expected a sequence of OrderedGates!")
         qubits = [gate.qubit for gate in gates]
         if len(set(qubits)) != len(qubits):
-            raise ValueError("All gates must act on differen qubits!")
+            raise ValueError("All gates must act on different qubits!")
         qubits2 = qubits.copy()
         qubits2.sort(reverse=True)
         if qubits != qubits2:
@@ -79,14 +79,14 @@ class OrderedOperator:
         if not isinstance(other, OrderedOperator):
             raise NotImplementedError("Can only compare OrderedOperators!")
         if len(self.gates) != len(other.gates):
-            raise ValueError("Both operators must have the same number of gates!")
+            raise ValueError("Operators have different number of gates!")
         return self.gates == other.gates
 
     def __lt__(self, other):
         if not isinstance(other, OrderedOperator):
             raise NotImplementedError("Can only compare OrderedOperators!")
         if len(self.gates) != len(other.gates):
-            raise ValueError("Both operators must have the same number of gates!")
+            raise ValueError("Operators have different number of gates!")
         return self.gates < other.gates
 
     def __str__(self):
@@ -97,13 +97,16 @@ class OrderedOperator:
 
     @property
     def position(self) -> int:
-        """The zero-based position of the operator in the vector of all lexicographic ordered operators of same dimension.
+        """Position in the vector of all operators with equal dimension.
 
-        For example, the operator O=IZ has position 1, since the vector of all operators
-        with dimension 2 in lexicographic order is (II, IZ, ZI, ZZ).
+        The vector is sorted with respect to the lexicographic order from top
+        to bottom. The position is zero-based.
 
-        Determine the order by casting the operator-tuple into a bitstring, replacing
-        I -> 0 and Z -> 1.
+        For example, the operator O=IZ has position 1, since the vector of all
+        operators with dimension 2 in lexicographic order is (II, IZ, ZI, ZZ).
+
+        Determine the order by casting the operator-tuple into a bitstring,
+        replacing I -> 0 and Z -> 1.
         """
         bitstring = "".join([gate.as_bitstring for gate in self.gates])
         return int(bitstring, base=2)
@@ -112,35 +115,36 @@ class OrderedOperator:
     def N(self) -> int:
         """The dimension of the operator.
 
-        This is determined by the number of gates of the operator and therefore equal to
-        the number of qubits the operator acts on.
+        This is determined by the number of gates of the operator and therefore
+        equal to the number of qubits the operator acts on.
         """
         return len(self.gates)
 
     def sign(self, bitstring: str) -> int:
-        """The sign of the given bitstring w.r.t this operator to calculate the expectation value.
+        """Sign of the bitstring to calculate the expectation value.
 
-        The sign gets a factor of -1 for each 1 in the bitstring if the corresponding
-        gate of the operator is a Z gate.
+        The sign is dependent on the operator: It gets a factor -1 for each
+        1 in the bistring if the corresponding gate is a Z gate.
         """
         gate_string = "".join([gate.as_bitstring for gate in self.gates])
-        one_and_z = bin(int(bitstring, base=2) & int(gate_string, base=2)).count("1")
-        return (-1) ** one_and_z
+        one_and_z = bin(int(bitstring, base=2) & int(gate_string, base=2))
+        return (-1) ** one_and_z.count("1")
 
 
 def lexicographic_ordered_operators(N: int) -> OrderedOperators:
-    """Returns all combinations of N dimensional operators, in lexicographic order."""
+    """All combinations of N dimensional operators, in lexicographic order."""
     # create all combinations of OrderedGates in lexicographic order
     # note that the qubit is only set temporarily, we will adjust it later
-    prototypes: List[Tuple[OrderedGate, ...]] = list(product([IGate(-1), ZGate(-2)], repeat=N))
+    prototypes: List[Tuple[OrderedGate, ...]]
+    prototypes = list(product([IGate(-1), ZGate(-2)], repeat=N))
 
     operators: List[OrderedOperator] = list()
     for prototype in prototypes:
-        # take care, since we enumerate our qubits conventionally from right to left!
+        # qubit enumeration is conventionally from right to left
         qubits = range(N)[::-1]
         gates: List[OrderedGate] = list()
         # adjust the qubit of each gate to the correct value
-        # attention: all gates are the same instance, so we re-instantiate each gate!
+        # all gates are references to the same instance, so re-instantiate them
         for qubit, gate in zip(qubits, prototype):
             if isinstance(gate, IGate):
                 gate = IGate(qubit)

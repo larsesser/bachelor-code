@@ -13,17 +13,18 @@ _W_MATRIX_INVERSE: Dict[int, ImmutableMatrix] = dict()
 
 
 def w_matrix(N: int, error_probabilities) -> ImmutableMatrix:
-    """Return the w-matrix for a given operator dimension N.
+    """Return the w-matrix for a given operator-dimension N.
 
-    All operators of dimension N consist of N gates (Pauli-Z or Identity). Suppose
-    they are ordered in a vector \vec{O} with respect to the lexicographic order.
-    Similar, all expectation values of random opertators of dimension N are ordered
-    in a vector \vec{\tilde{O}}, also with respect to the lexicographic order.
+    All operators of dimension N consist of N gates (Pauli-Z or Identity).
+    Suppose they are ordered in a vector \vec{O} with respect to the
+    lexicographic order. Similar, all expectation values of random operators
+    of dimension N are ordered in a vector \vec{\tilde{O}}, also with respect
+    to the lexicographic order.
 
     Then, w is the matrix relating the noise-free operators O of \vec{O} to the
-    statistical expectation value of the operators \tilde{O} of \vec{\tilde{O}}.
+    statistical expectation value of operators \tilde{O} of \vec{\tilde{O}}.
 
-    For N=2, this looks as follows (w is a 4x4 matrix, in general a 2^Nx2^N matrix):
+    For N=2, this looks as follows (w is a 2^Nx2^N matrix):
         ––                         ––            ––   ––
         | E ( \tilde{I} \tilde{I} ) |            | I I |
         | E ( \tilde{I} \tilde{Z} ) |            | I Z |
@@ -31,21 +32,22 @@ def w_matrix(N: int, error_probabilities) -> ImmutableMatrix:
         | E ( \tilde{Z} \tilde{Z} ) |            | Z Z |
         ––                         ––            ––   ––
 
-    To save a great amount of computation time when we later need to invert the matrix,
-    the error probabilities are directly substituted with the given values.
+    To save a great amount of computation time when we later need to invert the
+    matrix, the placeholders of the error probabilities are substituted with
+    the given values.
     """
     # use cached matrix if available
     if N in _W_MATRIX:
         return _W_MATRIX[N]
 
     # check given error probabilities
-    if not all(unravel_symbol(symbol).qubit in range(N) for symbol in error_probabilities.keys()):
-        raise ValueError("A given error affects a qubit which is out of range of the given operator.")
+    if any(unravel_symbol(s).qubit not in range(N) for s in error_probabilities):
+        raise ValueError("An error affects a qubit outside the given range.")
     if 2 * N != len(error_probabilities):
         raise ValueError("Not all error probabilities were specified"
                          " (flipping |0> -> |1> and flipping |1> -> |0>).")
     # ensure the probabilities are taken accurate as sympy numbers
-    error_probabilities = {key: S(value) for key, value in error_probabilities.items()}
+    error_probabilities = {k: S(v) for k, v in error_probabilities.items()}
 
     noiseless_operators = lexicographic_ordered_operators(N)
     noisy_operators = lexicographic_ordered_operators(N)
@@ -57,7 +59,7 @@ def w_matrix(N: int, error_probabilities) -> ImmutableMatrix:
         for col, noiseless_operator in enumerate(noiseless_operators):
             matrix[row, col] = w_element(noiseless_operator, noisy_operator)
 
-    # substitute the probabilities in the matrix, cut-off very small numbers (<< 10^-50)
+    # substitute the probabilities, cut-off very small numbers (<< 10^-50)
     matrix = matrix.evalf(subs=error_probabilities, chop=True)
 
     # cache matrix
@@ -69,15 +71,16 @@ def w_matrix(N: int, error_probabilities) -> ImmutableMatrix:
 def w_matrix_inverse(N: int) -> ImmutableMatrix:
     """Calculate the inverse w matrix.
 
-    This is used to actually error correct an operator from several noisy operator
-    expectation values. Note that the values for the probabilities are already inserted.
+    This is used to actually error correct an operator from several noisy
+    operator expectation values. Note that the values for the probabilities
+    are already inserted.
     """
     # use cached matrix if available
     if N in _W_MATRIX_INVERSE:
         return _W_MATRIX_INVERSE[N]
 
     if N not in _W_MATRIX:
-        raise RuntimeError("First call w_matrix explicitly to compute the matrix.")
+        raise RuntimeError("First, call w_matrix explicitly.")
     matrix = _W_MATRIX[N]
 
     _W_MATRIX_INVERSE[N] = matrix.inverse()
@@ -85,10 +88,12 @@ def w_matrix_inverse(N: int) -> ImmutableMatrix:
     return _W_MATRIX_INVERSE[N]
 
 
-def w_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperator) -> Expr:
+def w_element(noiseless_operator: OrderedOperator,
+              noisy_operator: OrderedOperator) -> Expr:
     """Calculate one entry of the w_matrix.
 
-    The entry depends on the noise free operators (column) and noisy operators (row).
+    The entry depends on the noise free operator (determining the column) and
+    the noisy operator (determining the row).
 
     For N=1, the 2x2 w-matrix looks like this:
         ––                                                 ––
@@ -96,14 +101,15 @@ def w_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperat
         | w_element(I, \tilde{Z})   w_element(Z, \tilde{Z}) |
         ––                                                 ––
     """
-    # w is a lower triangular matrix, so the upper right part of the matrix is 0
+    # w is a lower triangular matrix, so the upper right part is always 0
     if noisy_operator < noiseless_operator:
         return S(0)
 
     ret = S(1)
-    for noiseless_gate, noisy_gate in zip(noiseless_operator.gates, noisy_operator.gates):
+    for noiseless_gate, noisy_gate in zip(noiseless_operator.gates,
+                                          noisy_operator.gates):
         if noisy_gate.qubit != noiseless_gate.qubit:
-            raise ValueError("NoisyGate and NoislessGate must act on the same qubit!")
+            raise ValueError("Both gates must act on the same qubit!")
         qubit = noisy_gate.qubit
         if isinstance(noiseless_gate, IGate) and isinstance(noisy_gate, IGate):
             ret *= S(1)
@@ -124,13 +130,14 @@ def w_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperat
     return ret
 
 
-def w_inverse_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperator) -> Expr:
-    """Get the entry in w^-1 for given noiseless and noisy operator.
+def w_inverse_element(noiseless_operator: OrderedOperator,
+                      noisy_operator: OrderedOperator) -> Expr:
+    """Get the entry in w^-1 for the given noiseless and noisy operator.
 
-    This is needed to reconstruct the noiseless operator from multiple noisy one.
+    This is used to reconstruct the noiseless operator from multiple noisy ones.
     """
     if noiseless_operator.N != noisy_operator.N:
-        raise ValueError("Noisless and noisy operator must be of same dimension.")
+        raise ValueError("Both operators must have the same dimension.")
     row = noiseless_operator.position
     col = noisy_operator.position
     w_inverse = w_matrix_inverse(noiseless_operator.N)
@@ -138,15 +145,18 @@ def w_inverse_element(noiseless_operator: OrderedOperator, noisy_operator: Order
 
 
 def relevant_operators(noiseless_operator: OrderedOperator) -> OrderedOperators:
-    """Determine all noisy operators which need to be measured to reconstruct the given noiseless operator.
+    """All noisy operators to be measured to reconstruct the noiseless operator.
 
-    Go through all columns of w^-1 for the row given by the noiseless_operator and finde
-    those matrix elements which are not 0.
+    Go through all columns of w^-1 for the row determined by the noiseless
+    operator, find those matrix elements which are not 0 and return the
+    corresponding operators.
     """
     row = noiseless_operator.position
     noisy_operators = lexicographic_ordered_operators(noiseless_operator.N)
     w_inverse = w_matrix_inverse(noiseless_operator.N)
-    return [operator for operator, w_entry in zip(noisy_operators, w_inverse.row(row)) if w_entry != 0]
+    operators = [o for o, w_entry in zip(noisy_operators, w_inverse.row(row))
+                 if w_entry != 0]
+    return operators
 
 
 def p0_symbol(q: int) -> Symbol:
@@ -178,8 +188,9 @@ class Bitflip(NamedTuple):
 def unravel_symbol(symbol: Symbol) -> Bitflip:
     """Extract the information from a bitflip-probability symbol.
 
-    This takes one of the symbols created by p0_symbol or p1_symbol and extracts the
-    flipping (from_state flipping into to_state) and the affected qubit.
+    This takes one of the symbols created by p0_symbol or p1_symbol and
+    extracts the flipping direction (from_state flipping into to_state) and the
+    affected qubit.
     """
     symbol_str = sstr(symbol)
     if m := re.match(r"p(?P<from_state>\d)_(?P<qubit>\d)", symbol_str):

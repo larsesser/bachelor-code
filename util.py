@@ -5,7 +5,7 @@ import numpy as np
 from qiskit import QuantumCircuit
 from tabulate import tabulate
 
-# prevent cyclic import, since BenchmarkResult is only needed for static type annotation
+# prevent cyclic import, BenchmarkResult is only needed for type annotation
 if TYPE_CHECKING:
     from test_mitigation import BenchmarkResult
 else:
@@ -26,17 +26,18 @@ def random_angles(N: int) -> List[AnglePair]:
     ]
 
 
-def init_random_state(N: int, angles: List[Tuple[float, float]]) -> QuantumCircuit:
-    """Returns a QuantumCircuit where each qubit is initialized in a random state.
+def init_random_state(N: int, angles: List[AnglePair]) -> QuantumCircuit:
+    """Returns a QuantumCircuit initialized in a random state.
 
-    The random state is realised through an RX(sigma) and RZ(theta) gate acting on each
-    qubit, where sigma and theta are angles from [0, 2*pi).
+    A RX(sigma) and RZ(theta) is applied to each qubit, where sigma and theta
+    are angles from [0, 2*pi). They are stored in the angles' parameter.
 
-    To realise entangled states, a CX gate is applied to each combination of qubits.
+    To include entangled states, a CX gate is applied to each combination of
+    control- and target qubits.
     """
     if N != len(angles):
-        raise ValueError(f"Must provide equal number of qubits ({N}) and pairs of"
-                         f"angles ({len(angles)}).")
+        raise ValueError(f"Must provide equal number of qubits ({N}) and pairs"
+                         f" of angles ({len(angles)}).")
 
     circ = QuantumCircuit(N)
 
@@ -71,14 +72,14 @@ def print_result(results: List[BenchmarkResult]):
     ]
 
     is_corrected_larger = [
-        "!" if corrected_element > noisy_element else ""
-        for corrected_element, noisy_element in zip(corrected_compairson, noisy_compairson)
+        "!" if c > n else ""
+        for c, n in zip(corrected_compairson, noisy_compairson)
     ]
 
     print(
         tabulate(
-            zip(noiseless, noisy, corrected, noisy_compairson, corrected_compairson,
-                is_corrected_larger),
+            zip(noiseless, noisy, corrected, noisy_compairson,
+                corrected_compairson, is_corrected_larger),
             headers=["Noiseless", "Noisy", "Corrected",
                      "|(Noisy-Noiseless)|/|Noiseless|",
                      "|(Corrected-Noiseless)|/|Noiseless|", "C>N"]

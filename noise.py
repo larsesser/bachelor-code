@@ -6,12 +6,12 @@ from sympy import Symbol
 
 from w import p0_symbol, p1_symbol
 
-# Mapping a symbol retrieved from w.py p0_symbol / p1_symbol to the flipping probability
+# Mapping a symbol retrieved from w.py to the flipping probability
 ErrorProbabilities = Dict[Symbol, float]
 
 
 def measure_errors(backend, N: int) -> ErrorProbabilities:
-    """Measure the error probabilites of a given backend for the given number of qubits."""
+    """Measure the error probabilities for the given number of qubits."""
     ret = dict()
     shots = backend.options.get("shots")
     for qubit in range(N):
