@@ -5,6 +5,7 @@ import numpy as np
 from qiskit import QuantumCircuit
 from tabulate import tabulate
 
+# prevent cyclic import, since TestResult is only needed for static type annotation
 if TYPE_CHECKING:
     from test_mitigation import TestResult
 else:
@@ -28,9 +29,10 @@ def random_angles(N: int) -> List[AnglePair]:
 def init_random_state(N: int, angles: List[Tuple[float, float]]) -> QuantumCircuit:
     """Returns a QuantumCircuit where each qubit is initialized in a random state.
 
-    The random state is realised through an RX and RZ gate acting on each qubit and
-    using the angles provided in angles[qubit]. To realise entangled states, a CX gate
-    is applied to each forwarding combination of qubits.
+    The random state is realised through an RX(sigma) and RZ(theta) gate acting on each
+    qubit, where sigma and theta are angles from [0, 2*pi).
+
+    To realise entangled states, a CX gate is applied to each combination of qubits.
     """
     if N != len(angles):
         raise ValueError(f"Must provide equal number of qubits ({N}) and pairs of"
@@ -54,6 +56,7 @@ def init_random_state(N: int, angles: List[Tuple[float, float]]) -> QuantumCircu
 
 
 def print_result(results: List[TestResult]):
+    """Print some statistics for the given results."""
     noisy = [result.noisy for result in results]
     noiseless = [result.noiseless for result in results]
     corrected = [result.corrected for result in results]

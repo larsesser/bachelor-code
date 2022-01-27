@@ -13,15 +13,15 @@ _W_MATRIX_INVERSE_DIMENSION: Dict[int, ImmutableMatrix] = dict()
 
 
 def w_matrix(N: int, error_probabilities) -> ImmutableMatrix:
-    """Return the w-matrix for a given number N of operators.
+    """Return the w-matrix for a given operator dimension N.
 
-    Suppose we have a total of N operators (Pauli-Z or Identity), acting on N qubits.
-    Then, we consider the vector which entries are all possible combinations (with
-    respect to the tensor product) of those operators of length N. The entries of the
-    operator are ordered by the _lexicographic order_ from top to bottom.
+    All operators of dimension N consist of N gates (Pauli-Z or Identity). Suppose
+    they are ordered in a vector \vec{O} with respect to the lexicographic order.
+    Similar, all expectation values of random opertators of dimension N are ordered
+    in a vector \vec{\tilde{O}}, also with respect to the lexicographic order.
 
-    Then, w is the matrix relating the noise-free operators O to the statistical
-    expectation value of the operators \tilde{O}.
+    Then, w is the matrix relating the noise-free operators O of \vec{O} to the
+    statistical expectation value of the operators \tilde{O} of \vec{\tilde{O}}.
 
     For N=2, this looks as follows (w is a 4x4 matrix, in general a 2^Nx2^N matrix):
         ––                         ––            ––   ––
@@ -43,7 +43,7 @@ def w_matrix(N: int, error_probabilities) -> ImmutableMatrix:
         raise ValueError("A given error affects a qubit which is out of range of the given operator.")
     if 2 * N != len(error_probabilities):
         raise ValueError("Not all error probabilities were specified"
-                         " (flipping |0> -> |1> and flipping |1> -> |0>.")
+                         " (flipping |0> -> |1> and flipping |1> -> |0>).")
     # ensure the probabilities are taken accurate as sympy numbers
     error_probabilities = {key: S(value) for key, value in error_probabilities.items()}
 
@@ -70,7 +70,7 @@ def w_matrix_inverse(N: int) -> ImmutableMatrix:
     """Calculate the inverse w matrix.
 
     This is used to actually error correct an operator from several noisy operator
-    expectation values. Note that the values for the probabilities are directly inserted.
+    expectation values. Note that the values for the probabilities are already inserted.
     """
     # use cached matrix if available
     if N in _W_MATRIX_INVERSE_DIMENSION:
@@ -119,9 +119,7 @@ def w_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperat
             p1_q = p1_symbol(qubit)
             ret *= (S(1) - p0_q - p1_q)
         else:
-            print(noiseless_operator)
-            print(noisy_operator)
-            raise ValueError(qubit, noiseless_gate, noisy_gate)
+            raise NotImplementedError
 
     return ret
 
@@ -132,7 +130,7 @@ def w_inverse_element(noiseless_operator: OrderedOperator, noisy_operator: Order
     This is needed to reconstruct the noiseless operator from multiple noisy one.
     """
     if noiseless_operator.N != noisy_operator.N:
-        raise ValueError("Noisless and noisy operator must contain the same number of gates.")
+        raise ValueError("Noisless and noisy operator must be of same dimension.")
     row = noiseless_operator.position
     col = noisy_operator.position
     w_inverse = w_matrix_inverse(noiseless_operator.N)
@@ -154,11 +152,9 @@ def relevant_operators(noiseless_operator: OrderedOperator) -> OrderedOperators:
 def p0_symbol(q: int) -> Symbol:
     """Symbol for the bit-flip probability from |0> -> |1> of qubit q.
 
-    We use sympy symbols to add placeholders into the w matrix. This placeholders will
-    be substituted later using sympy.substitute, so we need to calculate the w matrix
-    only once per number of operators N.
-
-    This functions is used to provide a consistent naming scheme.
+    We use sympy symbols to add placeholders into the w matrix to avoid machine
+    precision errors and make the code more readable. This functions is used to
+    provide a consistent naming scheme.
     """
     return Symbol(f"p0_{q}")
 
@@ -166,11 +162,9 @@ def p0_symbol(q: int) -> Symbol:
 def p1_symbol(q: int) -> Symbol:
     """Symbol for the bit-flip probability from |1> -> |0> of qubit q.
 
-    We use sympy symbols to add placeholders into the w matrix. This placeholders will
-    be substituted later using sympy.substitute, so we need to calculate the w matrix
-    only once per number of operators N.
-
-    This functions is used to provide a consistent naming scheme.
+    We use sympy symbols to add placeholders into the w matrix to avoid machine
+    precision errors and make the code more readable. This functions is used to
+    provide a consistent naming scheme.
     """
     return Symbol(f"p1_{q}")
 

@@ -8,6 +8,7 @@ OrderedOperators = Sequence["OrderedOperator"]
 
 @total_ordering
 class OrderedGate:
+    """A single gate acting on one qubit and supporting lexicographic order."""
     # the name of the operator
     name: str
     # the qubit on which the gate will act
@@ -57,6 +58,7 @@ class ZGate(OrderedGate):
 
 @total_ordering
 class OrderedOperator:
+    """An operator consisting of multiple gates which support lexicographic order."""
     gates: Tuple[OrderedGate]
 
     def __init__(self, *gates: OrderedGate):
@@ -108,11 +110,15 @@ class OrderedOperator:
 
     @property
     def N(self) -> int:
-        """The dimension of the operator."""
+        """The dimension of the operator.
+
+        This is determined by the number of gates of the operator and therefore equal to
+        the number of qubits the operator acts on.
+        """
         return len(self.gates)
 
     def sign(self, bitstring: str) -> int:
-        """Determine the sign of the given bitstring for calculation of expectation value of this operator.
+        """The sign of the given bitstring w.r.t this operator to calculate the expectation value.
 
         The sign gets a factor of -1 for each 1 in the bitstring if the corresponding
         gate of the operator is a Z gate.
