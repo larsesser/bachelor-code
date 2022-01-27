@@ -5,11 +5,11 @@ import numpy as np
 from qiskit import QuantumCircuit
 from tabulate import tabulate
 
-# prevent cyclic import, since TestResult is only needed for static type annotation
+# prevent cyclic import, since BenchmarkResult is only needed for static type annotation
 if TYPE_CHECKING:
-    from test_mitigation import TestResult
+    from test_mitigation import BenchmarkResult
 else:
-    TestResult = Any
+    BenchmarkResult = Any
 
 
 AnglePair = Tuple[float, float]
@@ -55,7 +55,7 @@ def init_random_state(N: int, angles: List[Tuple[float, float]]) -> QuantumCircu
     return circ
 
 
-def print_result(results: List[TestResult]):
+def print_result(results: List[BenchmarkResult]):
     """Print some statistics for the given results."""
     noisy = [result.noisy for result in results]
     noiseless = [result.noiseless for result in results]
