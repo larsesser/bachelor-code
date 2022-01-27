@@ -8,8 +8,8 @@ from ordered_operator import (IGate, OrderedOperator, OrderedOperators, ZGate,
                               lexicographic_ordered_operators)
 
 # use global variables to cache calculated matrices
-_W_MATRIX_DIMENSION: Dict[int, ImmutableMatrix] = dict()
-_W_MATRIX_INVERSE_DIMENSION: Dict[int, ImmutableMatrix] = dict()
+_W_MATRIX: Dict[int, ImmutableMatrix] = dict()
+_W_MATRIX_INVERSE: Dict[int, ImmutableMatrix] = dict()
 
 
 def w_matrix(N: int, error_probabilities) -> ImmutableMatrix:
@@ -35,8 +35,8 @@ def w_matrix(N: int, error_probabilities) -> ImmutableMatrix:
     the error probabilities are directly substituted with the given values.
     """
     # use cached matrix if available
-    if N in _W_MATRIX_DIMENSION:
-        return _W_MATRIX_DIMENSION[N]
+    if N in _W_MATRIX:
+        return _W_MATRIX[N]
 
     # check given error probabilities
     if not all(unravel_symbol(symbol).qubit in range(N) for symbol in error_probabilities.keys()):
@@ -61,9 +61,9 @@ def w_matrix(N: int, error_probabilities) -> ImmutableMatrix:
     matrix = matrix.evalf(subs=error_probabilities, chop=True)
 
     # cache matrix
-    _W_MATRIX_DIMENSION[N] = ImmutableMatrix(matrix)
+    _W_MATRIX[N] = ImmutableMatrix(matrix)
 
-    return _W_MATRIX_DIMENSION[N]
+    return _W_MATRIX[N]
 
 
 def w_matrix_inverse(N: int) -> ImmutableMatrix:
@@ -73,16 +73,16 @@ def w_matrix_inverse(N: int) -> ImmutableMatrix:
     expectation values. Note that the values for the probabilities are already inserted.
     """
     # use cached matrix if available
-    if N in _W_MATRIX_INVERSE_DIMENSION:
-        return _W_MATRIX_INVERSE_DIMENSION[N]
+    if N in _W_MATRIX_INVERSE:
+        return _W_MATRIX_INVERSE[N]
 
-    if N not in _W_MATRIX_DIMENSION:
+    if N not in _W_MATRIX:
         raise RuntimeError("First call w_matrix explicitly to compute the matrix.")
-    matrix = _W_MATRIX_DIMENSION[N]
+    matrix = _W_MATRIX[N]
 
-    _W_MATRIX_INVERSE_DIMENSION[N] = matrix.inverse()
+    _W_MATRIX_INVERSE[N] = matrix.inverse()
 
-    return _W_MATRIX_INVERSE_DIMENSION[N]
+    return _W_MATRIX_INVERSE[N]
 
 
 def w_element(noiseless_operator: OrderedOperator, noisy_operator: OrderedOperator) -> Expr:
