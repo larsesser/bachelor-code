@@ -15,7 +15,7 @@ _W_MATRIX_INVERSE: Dict[int, ImmutableMatrix] = dict()
 ErrorProbabilities = Dict[Symbol, float]
 
 
-def w_matrix(N: int, error_probabilities: ErrorProbabilities) -> ImmutableMatrix:
+def w_matrix(N: int, errors: ErrorProbabilities) -> ImmutableMatrix:
     """Return the w-matrix for a given operator-dimension N.
 
     All operators of dimension N consist of N gates (Pauli-Z or Identity).
@@ -44,13 +44,13 @@ def w_matrix(N: int, error_probabilities: ErrorProbabilities) -> ImmutableMatrix
         return _W_MATRIX[N]
 
     # check given error probabilities
-    if any(unravel_symbol(s).qubit not in range(N) for s in error_probabilities):
+    if any(unravel_symbol(symbol).qubit not in range(N) for symbol in errors):
         raise ValueError("An error affects a qubit outside the given range.")
-    if 2 * N != len(error_probabilities):
+    if 2 * N != len(errors):
         raise ValueError("Not all error probabilities were specified"
                          " (flipping |0> -> |1> and flipping |1> -> |0>).")
     # ensure the probabilities are taken accurate as sympy numbers
-    error_probabilities = {k: S(v) for k, v in error_probabilities.items()}
+    errors = {key: S(value) for key, value in errors.items()}
 
     noiseless_operators = lexicographic_ordered_operators(N)
     noisy_operators = lexicographic_ordered_operators(N)
@@ -63,7 +63,7 @@ def w_matrix(N: int, error_probabilities: ErrorProbabilities) -> ImmutableMatrix
             matrix[row, col] = w_element(noiseless_operator, noisy_operator)
 
     # substitute the probabilities, cut-off very small numbers (<< 10^-50)
-    matrix = matrix.evalf(subs=error_probabilities, chop=True)
+    matrix = matrix.evalf(subs=errors, chop=True)
 
     # cache matrix
     _W_MATRIX[N] = ImmutableMatrix(matrix)
