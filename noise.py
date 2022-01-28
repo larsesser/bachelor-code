@@ -1,13 +1,7 @@
-from typing import Dict
-
 from qiskit import (ClassicalRegister, QuantumCircuit, QuantumRegister,
                     transpile)
-from sympy import Symbol
 
-from w import p0_symbol, p1_symbol
-
-# Mapping a symbol retrieved from w.py to the flipping probability
-ErrorProbabilities = Dict[Symbol, float]
+from w import ErrorProbabilities, p0_symbol, p1_symbol
 
 
 def measure_errors(backend, N: int) -> ErrorProbabilities:

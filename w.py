@@ -11,8 +11,11 @@ from ordered_operator import (IGate, OrderedOperator, OrderedOperators, ZGate,
 _W_MATRIX: Dict[int, ImmutableMatrix] = dict()
 _W_MATRIX_INVERSE: Dict[int, ImmutableMatrix] = dict()
 
+# Mapping a symbol to the flipping probability
+ErrorProbabilities = Dict[Symbol, float]
 
-def w_matrix(N: int, error_probabilities) -> ImmutableMatrix:
+
+def w_matrix(N: int, error_probabilities: ErrorProbabilities) -> ImmutableMatrix:
     """Return the w-matrix for a given operator-dimension N.
 
     All operators of dimension N consist of N gates (Pauli-Z or Identity).
