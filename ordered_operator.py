@@ -18,12 +18,12 @@ class OrderedGate:
     # express the gate as bit for advanced calculations in OrdereOperator
     as_bitstring: str
 
-    def __eq__(self, other):
+    def __eq__(self, other: "OrderedGate"):
         if not isinstance(other, OrderedGate):
             raise NotImplementedError("Can only compare OrderedGates!")
         return self.order == other.order
 
-    def __lt__(self, other):
+    def __lt__(self, other: "OrderedGate"):
         if not isinstance(other, OrderedGate):
             raise NotImplementedError("Can only compare OrderedGates!")
         return self.order < other.order
@@ -75,14 +75,14 @@ class OrderedOperator:
             raise ValueError("A gate must be applied to all qubits inbetween!")
         self.gates = tuple(gates)
 
-    def __eq__(self, other):
+    def __eq__(self, other: "OrderedOperator"):
         if not isinstance(other, OrderedOperator):
             raise NotImplementedError("Can only compare OrderedOperators!")
         if len(self.gates) != len(other.gates):
             raise ValueError("Operators have different number of gates!")
         return self.gates == other.gates
 
-    def __lt__(self, other):
+    def __lt__(self, other: "OrderedOperator"):
         if not isinstance(other, OrderedOperator):
             raise NotImplementedError("Can only compare OrderedOperators!")
         if len(self.gates) != len(other.gates):
