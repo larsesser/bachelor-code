@@ -9,13 +9,13 @@ OrderedOperators = Sequence["OrderedOperator"]
 @total_ordering
 class OrderedGate:
     """A single gate acting on one qubit and supporting lexicographic order."""
-    # the name of the operator
+    # the name of the gate
     name: str
-    # the qubit on which the gate will act
+    # the gate acts on this qubit
     qubit: int
-    # the order of the operator, considered by the lexicographic order.
+    # the order of the gate, considered by the lexicographic order.
     order: int = 0
-    # used to determine the position of the operator containing this gate
+    # express the gate as bit for advanced calculations in OrdereOperator
     as_bitstring: str
 
     def __eq__(self, other):
