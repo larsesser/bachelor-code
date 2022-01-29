@@ -1,5 +1,5 @@
+import itertools
 from functools import total_ordering
-from itertools import product
 from typing import List, Sequence, Tuple
 
 # a bunch of operators acting on one or more qubits
@@ -136,7 +136,7 @@ def lexicographic_ordered_operators(N: int) -> OrderedOperators:
     # create all combinations of OrderedGates in lexicographic order
     # note that the qubit is only set temporarily, we will adjust it later
     prototypes: List[Tuple[OrderedGate, ...]]
-    prototypes = list(product([IGate(-1), ZGate(-2)], repeat=N))
+    prototypes = list(itertools.product([IGate(-1), ZGate(-2)], repeat=N))
 
     operators: List[OrderedOperator] = list()
     for prototype in prototypes:
