@@ -4,7 +4,7 @@ from typing import Dict, NamedTuple
 from sympy import Expr, ImmutableMatrix, Matrix, S, Symbol, zeros
 from sympy.printing import sstr
 
-from ordered_operator import (IGate, OrderedOperator, OrderedOperators, ZGate,
+from ordered_operator import (IGate, OrderedOperator, ZGate,
                               lexicographic_ordered_operators)
 
 # use global variables to cache calculated matrices
@@ -145,21 +145,6 @@ def w_inverse_element(noiseless_operator: OrderedOperator,
     col = noisy_operator.position
     w_inverse = w_matrix_inverse(noiseless_operator.N)
     return w_inverse[row, col]
-
-
-def relevant_operators(noiseless_operator: OrderedOperator) -> OrderedOperators:
-    """All noisy operators to be measured to reconstruct the noiseless operator.
-
-    Go through all columns of w^-1 for the row determined by the noiseless
-    operator, find those matrix elements which are not 0 and return the
-    corresponding operators.
-    """
-    row = noiseless_operator.position
-    noisy_operators = lexicographic_ordered_operators(noiseless_operator.N)
-    w_inverse = w_matrix_inverse(noiseless_operator.N)
-    operators = [o for o, w_entry in zip(noisy_operators, w_inverse.row(row))
-                 if w_entry != 0]
-    return operators
 
 
 def p0_symbol(q: int) -> Symbol:

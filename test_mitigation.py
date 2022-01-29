@@ -7,8 +7,9 @@ from sympy import Expr, S
 
 from expectation_value import expectation_value
 from noise import ErrorProbabilities
+from ordered_operator import lexicographic_ordered_operators
 from util import init_random_state, random_angles
-from w import OrderedOperator, relevant_operators, w_inverse_element, w_matrix
+from w import OrderedOperator, w_inverse_element, w_matrix
 
 
 class BenchmarkResult(NamedTuple):
@@ -71,7 +72,7 @@ def benchmark_mitigation(
     # calculate the w matrix with the given error probabilities
     _ = w_matrix(operator.N, error_probabilities)
     corrected: Expr = S(0)
-    for correcting_operator in relevant_operators(operator):
+    for correcting_operator in lexicographic_ordered_operators(operator.N):
         expectation = expectation_value(noisy_result, correcting_operator)
         correcting_factor = w_inverse_element(operator, correcting_operator)
         corrected += correcting_factor * expectation
