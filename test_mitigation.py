@@ -1,6 +1,6 @@
 from typing import NamedTuple
 
-from qiskit import transpile
+from qiskit import transpile, QuantumCircuit
 from qiskit.providers.aer.backends.aerbackend import AerBackend
 from qiskit.result.result import Result
 from sympy import Expr, S
@@ -26,6 +26,7 @@ class BenchmarkResult(NamedTuple):
 
 
 def benchmark_mitigation(
+        state: QuantumCircuit,
         operator: OrderedOperator,
         noiseless_backend: AerBackend,
         noisy_backend: AerBackend,
@@ -34,25 +35,19 @@ def benchmark_mitigation(
     """Produce some data to benchmark the error correction.
 
     We want to compare three cases:
-        1. The expectation value <O>_\rho of the given operator, measured on a
-           noiseless backend.
-        2. The expectation value <O>_\tilde{\rho} of the given operator,
-           measured on a noisy backend.
+        1. The expectation value <O>_\rho of the given operator O and state \rho,
+           measured on a noiseless backend.
+        2. The expectation value <O>_\tilde{\rho} of the given operator O and
+           state \rho, measured on a noisy backend.
         3. The corrected expectation value, constructed from measurements on
            the noisy backend and weighted with the w^-1 matrix.
 
-    To achieve this, we construct a random state \rho and measure it on the
-    noiseless backend and the noisy backend.
-
+    :param state: the state \rho which will be measured.
     :param operator: the operator which expectation value should be determined.
     :param noiseless_backend: the noiseless backend to compare the correction.
     :param noisy_backend: the noisy backend to perform the actual measurements.
     :param error_probabilities: the bit-flip probabilities of each qubit.
     """
-    # prepare a random state to be measured
-    state = init_random_state(operator.N, angles=random_angles(operator.N))
-    state.measure_all()
-
     # 1. measure the state on a noiseless backend
     circ = transpile(state, noiseless_backend)
     noiseless_result: Result = noiseless_backend.run(circ).result()
@@ -75,3 +70,19 @@ def benchmark_mitigation(
     result = BenchmarkResult(noisy=noisy, noiseless=noiseless,
                              corrected=float(corrected))
     return result
+
+
+def benchmark_random(
+        operator: OrderedOperator,
+        noiseless_backend: AerBackend,
+        noisy_backend: AerBackend,
+        error_probabilities: ErrorProbabilities
+) -> BenchmarkResult:
+    """A small wrapper around benchmark_mitigation using a random state"""
+    # prepare a random state to be measured
+    state = init_random_state(operator.N, angles=random_angles(operator.N))
+    state.measure_all()
+
+    return benchmark_mitigation(
+        state=state, operator=operator, noiseless_backend=noiseless_backend,
+        noisy_backend=noisy_backend, error_probabilities=error_probabilities)

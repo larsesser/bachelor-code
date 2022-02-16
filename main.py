@@ -9,7 +9,7 @@ from noise import measure_errors
 from ordered_operator import IGate, OrderedOperator, ZGate
 from util import print_result
 from w import w_matrix, w_matrix_inverse
-from test_mitigation import benchmark_mitigation
+from test_mitigation import benchmark_random
 
 operator = OrderedOperator(ZGate(0))
 print(f"Operator: {operator}")
@@ -41,7 +41,7 @@ print(f"W inverse: {w_inverse}")
 results = []
 iterations = 20
 for _ in range(iterations):
-    result = benchmark_mitigation(
+    result = benchmark_random(
         operator,
         noiseless_backend=noiseless_sim,
         noisy_backend=noisy_sim,
