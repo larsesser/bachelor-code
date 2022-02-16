@@ -78,15 +78,15 @@ class OrderedOperator:
     def __eq__(self, other: "OrderedOperator"):
         if not isinstance(other, OrderedOperator):
             raise NotImplementedError("Can only compare OrderedOperators!")
-        if len(self.gates) != len(other.gates):
-            raise ValueError("Operators have different number of gates!")
+        if self.N != other.N:
+            raise ValueError("Operators have different dimension!")
         return self.gates == other.gates
 
     def __lt__(self, other: "OrderedOperator"):
         if not isinstance(other, OrderedOperator):
             raise NotImplementedError("Can only compare OrderedOperators!")
-        if len(self.gates) != len(other.gates):
-            raise ValueError("Operators have different number of gates!")
+        if self.N != other.N:
+            raise ValueError("Operators have different dimension!")
         return self.gates < other.gates
 
     def __str__(self):
