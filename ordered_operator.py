@@ -1,3 +1,4 @@
+import copy
 import itertools
 from functools import total_ordering
 from typing import List, Sequence, Tuple
@@ -146,12 +147,8 @@ def lexicographic_ordered_operators(N: int) -> OrderedOperators:
         # adjust the qubit of each gate to the correct value
         # all gates are references to the same instance, so re-instantiate them
         for qubit, gate in zip(qubits, prototype):
-            if isinstance(gate, IGate):
-                gate = IGate(qubit)
-            elif isinstance(gate, ZGate):
-                gate = ZGate(qubit)
-            else:
-                raise NotImplementedError
+            gate = copy.copy(gate)
+            gate.qubit = qubit
             gates.append(gate)
         operators.append(OrderedOperator(*gates))
     return operators
