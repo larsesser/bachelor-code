@@ -38,7 +38,7 @@ print(f"Error probabilities: {error_probabilities}")
 print(f"W matrix: {w}")
 print(f"W inverse: {w_inverse}")
 
-results = list()
+results = []
 iterations = 20
 for _ in range(iterations):
     result = benchmark_mitigation(

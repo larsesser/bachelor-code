@@ -138,11 +138,11 @@ def lexicographic_ordered_operators(N: int) -> OrderedOperators:
     prototypes: List[Tuple[OrderedGate, ...]]
     prototypes = list(itertools.product([IGate(-1), ZGate(-2)], repeat=N))
 
-    operators: List[OrderedOperator] = list()
+    operators: List[OrderedOperator] = []
     for prototype in prototypes:
         # qubit enumeration is conventionally from right to left
         qubits = range(N)[::-1]
-        gates: List[OrderedGate] = list()
+        gates: List[OrderedGate] = []
         # adjust the qubit of each gate to the correct value
         # all gates are references to the same instance, so re-instantiate them
         for qubit, gate in zip(qubits, prototype):
