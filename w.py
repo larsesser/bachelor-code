@@ -16,24 +16,24 @@ ErrorProbabilities = Dict[Symbol, float]
 
 
 def w_matrix(N: int, errors: ErrorProbabilities) -> ImmutableMatrix:
-    """Return the w-matrix for a given operator-dimension N.
+    """Return the w-matrix for a given operator dimension N.
 
-    All operators of dimension N consist of N gates (Pauli-Z or Identity).
-    Suppose they are ordered in a vector \vec{O} with respect to the
-    lexicographic order. Similar, all expectation values of random operators
-    of dimension N are ordered in a vector \vec{\tilde{O}}, also with respect
-    to the lexicographic order.
+    All noiseless operators of dimension N consist of N gates (Pauli-Z or
+    Identity). Suppose they are ordered in a vector \vec{O} with respect to the
+    lexicographic order. Similar, all noisy operators of dimension N are
+    ordered in a vector \vec{\tilde{O}}, also with respect to the lexicographic
+    order.
 
-    Then, w is the matrix relating the noise-free operators O of \vec{O} to the
-    statistical expectation value of operators \tilde{O} of \vec{\tilde{O}}.
+    Then, w is the matrix relating the noiseless operators O of \vec{O} to the
+    noisy operators \tilde{O} of \vec{\tilde{O}}.
 
     For N=2, this looks as follows (w is a 2^Nx2^N matrix):
-        ––                         ––            ––   ––
-        | E ( \tilde{I} \tilde{I} ) |            | I I |
-        | E ( \tilde{I} \tilde{Z} ) |            | I Z |
-        | E ( \tilde{Z} \tilde{I} ) |   =  w  *  | Z I |
-        | E ( \tilde{Z} \tilde{Z} ) |            | Z Z |
-        ––                         ––            ––   ––
+        ––                   ––            ––   ––
+        | \tilde{I} \tilde{I} |            | I I |
+        | \tilde{I} \tilde{Z} |            | I Z |
+        | \tilde{Z} \tilde{I} |   =  w  *  | Z I |
+        | \tilde{Z} \tilde{Z} |            | Z Z |
+        ––                   ––            ––   ––
 
     To save a great amount of computation time when we later need to invert the
     matrix, the placeholders of the error probabilities are substituted with
@@ -95,7 +95,7 @@ def w_element(noiseless_operator: OrderedOperator,
               noisy_operator: OrderedOperator) -> Expr:
     """Calculate one entry of the w_matrix.
 
-    The entry depends on the noise free operator (determining the column) and
+    The entry depends on the noiseless operator (determining the column) and
     the noisy operator (determining the row).
 
     For N=1, the 2x2 w-matrix looks like this:
@@ -151,7 +151,7 @@ def p0_symbol(q: int) -> Symbol:
     """Symbol for the bit-flip probability from |0> -> |1> of qubit q.
 
     We use sympy symbols to add placeholders into the w matrix to avoid machine
-    precision errors and make the code more readable. This functions is used to
+    precision errors and make the code more readable. This function is used to
     provide a consistent naming scheme.
     """
     return Symbol(f"p0_{q}")
@@ -161,7 +161,7 @@ def p1_symbol(q: int) -> Symbol:
     """Symbol for the bit-flip probability from |1> -> |0> of qubit q.
 
     We use sympy symbols to add placeholders into the w matrix to avoid machine
-    precision errors and make the code more readable. This functions is used to
+    precision errors and make the code more readable. This function is used to
     provide a consistent naming scheme.
     """
     return Symbol(f"p1_{q}")
