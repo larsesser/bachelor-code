@@ -11,6 +11,8 @@ from util import print_result
 from w import w_matrix, w_matrix_inverse
 from test_mitigation import benchmark_random
 
+# The operator of interest. Additional gates may be added like
+#  operator = OrderedOperator(ZGate(2), IGate(1), ZGate(0))
 operator = OrderedOperator(ZGate(0))
 print(f"Operator: {operator}")
 
