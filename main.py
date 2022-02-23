@@ -14,19 +14,21 @@ from test_mitigation import benchmark_random
 operator = OrderedOperator(ZGate(0))
 print(f"Operator: {operator}")
 
-# noisy
+# prepare the noisy simulator
 noise_backend = FakeVigo()
 noise_model = NoiseModel().from_backend(noise_backend, gate_error=False, thermal_relaxation=False)
 noisy_sim: AerBackend = AerSimulator(noise_model=noise_model)
+# Seed the simulator to make results reproducible. Remove for actual runs.
 noisy_sim.set_options(seed_simulator=42)
 print(f"Shots: {noisy_sim.options.get('shots')}")
 
-# noiseless
+# prepare the noiseless simulator
 noiseless_sim: AerSimulator = Aer.get_backend('aer_simulator')
-noiseless_sim.set_option("shots", noisy_sim.options.get("shots"))
-noiseless_sim.set_option("seed_simulator", 42)
+noiseless_sim.set_options(shots=noisy_sim.options.get("shots"))
+# Seed the simulator to make results reproducible. Remove for actual runs.
+noiseless_sim.set_options(seed_simulator=42)
 
-# w matrix
+# calculate (and cache) the w matrix and its inverse
 error_probabilities = measure_errors(noisy_sim, operator.N)
 w = w_matrix(operator.N, error_probabilities)
 w_inverse = w_matrix_inverse(operator.N)

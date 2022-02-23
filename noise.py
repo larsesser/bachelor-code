@@ -1,5 +1,4 @@
-from qiskit import (ClassicalRegister, QuantumCircuit, QuantumRegister,
-                    transpile)
+from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, transpile
 
 from w import ErrorProbabilities, p0_symbol, p1_symbol
 
