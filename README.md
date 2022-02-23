@@ -1,6 +1,6 @@
-# Measurement Error Mitigation Algorithm on Quantum Computers
+# Measurement Error Mitigation Algorithm for Quantum Computers
 
-This code is part of my Bachelor Thesis *Implementation of a Measurement Error Mitigation Algorithm on Quantum Computers*, written at the *Helmholtz-Institut für Strahlen- und Kernphysik*, University of Bonn, Germany.
+This code is part of my Bachelor Thesis *Implementation of a Measurement Error Mitigation Algorithm for Quantum Computers*, written at the *Helmholtz-Institut für Strahlen- und Kernphysik*, University of Bonn, Germany.
 
 The code contains an implementation of an algorithm to reduce bit-flip errors during projective measurements in the computational basis on quantum computers.
 The algorithm itself was developed and published by Lena Funcke et al. in [Measurement Error Mitigation in Quantum Computers Through Classical Bit-Flip Correction](https://arxiv.org/abs/2007.03663).
